@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="text-center">Our Environment</h1>
+    <!-- <h1 class="text-center">Policy</h1> -->
     <section class="content">
       <div class="row" v-if="servers">
         <div class="col-md-4" v-for="server in servers">

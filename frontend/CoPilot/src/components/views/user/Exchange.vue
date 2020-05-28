@@ -7,16 +7,16 @@
       <!-- Info boxes -->
       <div class="col-md-3 col-sm-6 col-xs-12">
         <info-box color-class="bg-green"
-                  :icon-classes="['fa', 'fa-arrow-down']"
-                  text="Received this month"
-                  number="230.57"></info-box>
+                  :icon-classes="['fa', 'fa-plus']"
+                  text="Euro -> Eurotoken"
+                  number="1.01€/T"></info-box>
       </div>
       <!-- /.col -->
       <div class="col-md-3 col-sm-6 col-xs-12">
-        <info-box color-class="bg-red"
-                  :icon-classes="['fa', 'fa-arrow-up']"
-                  text="Sent this month"
-                  number="41,410"></info-box>
+        <info-box color-class="bg-blue"
+                  :icon-classes="['fa', 'fa-minus']"
+                  text="Eurotoken -> Euro"
+                  number="0.99T/€"></info-box>
       </div>
       <!-- /.col -->
     </div>
@@ -37,31 +37,65 @@
 
     <div class="row">
       <div class="col-xs-12">
-        <h2>Transfer</h2>
+        <h2>Euro -> Eurotoken</h2>
       </div>
       <!-- with characthers -->
-      <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="col-md-6 col-xs-12">
+        <label>Amount (EuroToken)</label>
         <div class="input-group">
           <span class="input-group-addon">
-            <i class="fa fa-fw fa-at" aria-hidden="true"></i>
+            <i class="fa fa-fw fa-eur" aria-hidden="true"></i>
           </span>
-          <input class="form-control" placeholder="Counterparty" type="text">
+          <input class="form-control" type="text">
+          <span class="input-group-addon">.00</span>
         </div>
       </div>
-      <div class="col-md-3 col-sm-6 col-xs-12">
-        <div class="input-group">
-        <span class="input-group-addon">
-          <i class="fa fa-fw fa-eur" aria-hidden="true"></i>
-        </span>
-        <input class="form-control" type="text">
-        <span class="input-group-addon">.00</span>
-      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 col-xs-12">
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select class="form-control">
+            <option>Ideal</option>
+            <option>option 2</option>
+            <option>option 3</option>
+            <option>option 4</option>
+            <option>option 5</option>
+          </select>
+        </div>
       </div>
     </div>
 
     <div class="row">
       <div class="col-xs-12">
-        <h2>Transaction History</h2>
+        <h2>Eurotoken -> Euro</h2>
+      </div>
+      <!-- with characthers -->
+      <div class="col-md-6 col-xs-12">
+        <label>Amount (EuroToken)</label>
+        <div class="input-group">
+          <span class="input-group-addon">
+            <i class="fa fa-fw fa-eur" aria-hidden="true"></i>
+          </span>
+          <input class="form-control" type="text">
+          <span class="input-group-addon" placeholder="12">.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 col-xs-12">
+        <div class="form-group">
+          <label>IBAN</label>
+          <div class="input-group">
+            <input class="form-control" placeholder="NL91 ABNA 0417 1643 00" type="text">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-xs-12">
+        <h2>Exchange History</h2>
       </div>
       <div class="col-md-6 col-xs-12">
         <table
@@ -70,80 +104,46 @@
           class="table table-bordered table-striped dataTable">
           <thead>
             <tr role="row">
-              <th style="width: 167px;" colspan="1" rowspan="1" tabindex="0">
-                Date
-              </th>
-              <th style="width: 207px;" colspan="1" rowspan="1" tabindex="0" >
-                Counterparty
-              </th>
-                <th style="width: 182px;" colspan="1" rowspan="1" tabindex="0" >
-                  Amount
-                </th>
-                  <th style="width: 142px;" colspan="1" rowspan="1" tabindex="0" >
-                    In/Out
-                  </th>
-                    <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0" >
-                      Description
-                    </th>
-                      <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0" >
-                        Status
-                      </th>
+              <th style="width: 167px;" colspan="1" rowspan="1" tabindex="0"> Date </th>
+              <th style="width: 182px;" colspan="1" rowspan="1" tabindex="0"> Amount </th>
+              <th style="width: 142px;" colspan="1" rowspan="1" tabindex="0"> In/Out </th>
+              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0"> Description </th>
+              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0"> Status </th>
             </tr>
           </thead>
           <tbody>
             <tr class="even" role="row">
-              <td>2020 May 28 22:19</td>
-              <td>Alice</td>
-              <td>6.00 €T</td>
+              <td>2020 May 01 15:19</td>
+              <td>2,567.00 €T</td>
               <td>In</td>
-              <td>Drinks</td>
-              <td>Pending</td>
+              <td>Salary April</td>
+              <td>Confirmed</td>
             </tr>
             <tr class="odd" role="row">
-              <td>2020 May 28 17:48</td>
-              <td>Albert Heijn</td>
-              <td>22.45 €T</td>
-              <td>Out</td>
-              <td>Id: 395729</td>
+              <td>2020 April 01 12:48</td>
+              <td>2,567.00 €T</td>
+              <td>In</td>
+              <td>Salary March</td>
               <td>Confirmed</td>
             </tr>
             <tr class="even" role="row">
-              <td>2020 May 28 11:34</td>
-              <td>Lunchbar</td>
-              <td>7.29 €T</td>
-              <td>Out</td>
-              <td></td>
-              <td>Confirmed</td>
-            </tr>
-            <tr class="odd" role="row">
-              <td>2020 May 28 8:23</td>
-              <td>Coffee Machine</td>
-              <td>0.99 €T</td>
-              <td>Out</td>
-              <td></td>
-              <td>Confirmed</td>
-            </tr>
-            <tr class="even" role="row">
-              <td>2020 May 27 22:19</td>
-              <td>Alice</td>
-              <td>6.00 €T</td>
+              <td>2020 March 02 11:34</td>
+              <td>2,567.00 €T</td>
               <td>In</td>
-              <td>Drinks</td>
+              <td>Salary February</td>
               <td>Confirmed</td>
             </tr>
             <tr class="odd" role="row">
-              <td>2020 May 27 17:48</td>
-              <td>Albert Heijn</td>
-              <td>22.45 €T</td>
-              <td>Out</td>
-              <td>Id: 857395</td>
+              <td>2020 February 02 8:23</td>
+              <td>2,567.00 €T</td>
+              <td>In</td>
+              <td>Salary January</td>
               <td>Confirmed</td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
               <th colspan="1" rowspan="1">Date</th>
-              <th colspan="1" rowspan="1">Counterparty</th>
               <th colspan="1" rowspan="1">Amount</th>
               <th colspan="1" rowspan="1">In/Out</th>
               <th colspan="1" rowspan="1">Description</th>
@@ -152,28 +152,6 @@
           </tfoot>
         </table>
       </div>
-    </div>
-
-    <!-- Main row -->
-    <div class="row">
-      <div class="col-md-3 col-sm-6 col-xs-12">
-        <process-info-box color-class="bg-green"
-                          :icon-classes="['fa', 'fa-arrow-up']"
-                          text="Received this month"
-                          number="2030.57"
-                          :progress="50"
-                          description="50% increase since May"></process-info-box>
-      </div>
-      <!-- /.col -->
-      <div class="col-md-3 col-sm-6 col-xs-12">
-        <process-info-box color-class="bg-red"
-                          :icon-classes="['fa', 'fa-arrow-down']"
-                          text="Sent this month"
-                          number="329.57"
-                          :progress="20"
-                          description="20% increase in 30 days"></process-info-box>
-      </div>
-      <!-- /.col -->
     </div>
     <!-- /.row -->
   </section>

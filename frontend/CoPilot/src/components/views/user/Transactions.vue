@@ -1,11 +1,9 @@
 <template>
   <section class="content">
     <div class="row center-block">
-      <h2>Transactions</h2>
       <div class="col-md-12">
         <div class="box">
           <div class="box-header">
-            <h3 class="box-title">Transactions for Bob</h3>
           </div>
           <!-- /.box-header -->
           <div class="box-body">

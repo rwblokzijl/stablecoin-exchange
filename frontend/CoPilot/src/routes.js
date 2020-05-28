@@ -7,6 +7,7 @@ import DashboardView from './components/views/Dashboard.vue'
 
 import AccountView from './components/views/user/Account.vue'
 import TransactionsView from './components/views/user/Transactions.vue'
+import ExchangeView from './components/views/user/Exchange.vue'
 
 import BankDashView from './components/views/bank/Dashboard.vue'
 import PolicyView from './components/views/bank/Policy.vue'
@@ -46,15 +47,20 @@ const routes = [
         name: 'Transactions',
         meta: {description: 'User transactions'}
       }, {
+        path: 'exchange',
+        component: ExchangeView,
+        name: 'Exchange',
+        meta: {description: 'Exchange'}
+      }, {
         path: 'bank',
         component: BankDashView,
         name: 'Dashboard',
-        meta: {description: 'Simple and advance table in CoPilot'}
+        meta: {description: 'Overview of activities'}
       }, {
         path: 'bank/policy',
         component: PolicyView,
-        name: 'Policy',
-        meta: {description: 'Simple and advance table in CoPilot'}
+        name: 'Settings and Policy',
+        meta: {description: 'Bank policy and configurations'}
       }, {
         path: 'bank/statistics',
         component: BankStatsView,

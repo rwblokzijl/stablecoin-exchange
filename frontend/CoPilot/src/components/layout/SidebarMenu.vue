@@ -10,8 +10,14 @@
     </router-link>
     <router-link tag="li" class="pageLink" to="/transactions">
       <a>
-        <i class="fa fa-exchange"></i>
+        <i class="fa fa-th-list"></i>
         <span class="page">Transactions</span>
+      </a>
+    </router-link>
+    <router-link tag="li" class="pageLink" to="/exchange">
+      <a>
+        <i class="fa fa-exchange"></i>
+        <span class="page">Exchange</span>
       </a>
     </router-link>
 

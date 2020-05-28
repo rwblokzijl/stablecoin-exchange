@@ -1,30 +1,30 @@
 import moment from 'moment'
 
 export const servers = [{
-  name: 'www01',
+  name: 'Intrest rates',
   status: 'success',
   icon: 'globe',
-  description: 'Web server that runs our sites'
+  description: 'Loan configurations'
 }, {
-  name: 'sql01',
+  name: 'Exchange rates',
   status: 'danger',
-  icon: 'database',
-  description: 'mySQL server used for reporting'
+  icon: 'exchange',
+  description: 'EuroToken vs Euro exchange rates'
 }, {
-  name: 'mongoDB01',
+  name: 'Bank settings',
   status: 'info',
-  icon: 'file-code-o',
+  icon: 'home',
   description: 'Main DB server'
 }, {
-  name: 'ldap01',
+  name: 'Loan configurations',
+  status: 'success',
+  icon: 'file-code-o',
+  description: 'Loan configurations'
+}, {
+  name: 'Identity management',
   status: 'success',
   icon: 'key',
-  description: 'Authentication server'
-}, {
-  name: 'mgmt01',
-  status: 'success',
-  icon: 'home',
-  description: 'Management server with all tools'
+  description: 'Configure keys and access'
 }, {
   name: 'bkup01',
   status: 'warning',

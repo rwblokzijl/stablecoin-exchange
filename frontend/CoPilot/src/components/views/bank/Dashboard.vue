@@ -3,18 +3,6 @@
   <section class="content">
     <!-- GitHub hint -->
     <div class="row">
-      <div class="col-xs-12">
-        <alert :dismissible="true"
-               type="success"
-               :iconClasses="['fa', 'fa-check']"
-               title="CoPilot is open source!">
-          <span>Click on icon to check it out on github.</span>
-          <a href="https://github.com/misterGF/CoPilot" target="_blank">
-            <i class="fa fa-github fa-2x"></i>
-          </a>
-        </alert>
-      </div>
-
       <!-- Info boxes -->
       <div class="col-md-3 col-sm-6 col-xs-12">
         <info-box color-class="bg-aqua"
@@ -58,7 +46,7 @@
           <div class="box-body">
             <div class="col-sm-6 col-xs-12">
               <p class="text-center">
-                <strong>Web Traffic Overview</strong>
+                <strong>Traffic Overview</strong>
               </p>
               <canvas id="trafficBar" ></canvas>
             </div>
