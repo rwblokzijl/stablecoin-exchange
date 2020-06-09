@@ -6,9 +6,11 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 jedi = "*"
+rope = "*"
 
 [packages]
 pyipv8 = "*"
+requests-oauthlib = "*"
 
 [requires]
 python_version = "3.8"

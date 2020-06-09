@@ -7,3 +7,4 @@ class TestBank(unittest.TestCase):
     def test_init(self):
         with self.assertRaises(TypeError):
             Bank()
+
