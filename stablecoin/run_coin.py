@@ -8,7 +8,7 @@ from stablecoin.persistence.database  import Database
 from stablecoin.ui.rest               import REST
 
 def main(*args):
-    bank        = ING()
+    bank        = ING("")
     blockchain  = TrustChain()
     persistence = Database()
     ui          = REST()

@@ -11,6 +11,8 @@ rope = "*"
 [packages]
 pyipv8 = "*"
 requests-oauthlib = "*"
+requests-http-signature = "*"
+cryptography = "*"
 
 [requires]
 python_version = "3.8"
