@@ -23,5 +23,3 @@ class TestStablecoinBusinessLogic(unittest.TestCase):
                 persistence=persistence,
                 blockchain=blockchain)
 
-    def test_init(self):
-        pass

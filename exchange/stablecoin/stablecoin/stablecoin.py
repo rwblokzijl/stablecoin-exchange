@@ -3,9 +3,14 @@ from stablecoin.blockchain.blockchain   import Blockchain
 from stablecoin.persistence.persistence import Persistence
 from stablecoin.ui.ui                   import UI
 
-# from abc import ABC
+from abc import ABC, abstractmethod
 
-class StabecoinInteractor:#(ABC):
+class StableCoin(ABC):
+    pass
+    # @abstractmethod
+    # def assign_moneuy
+
+class StabecoinInteractor(StableCoin):
 
     def __init__(self, bank, persistence, blockchain
             # , ui
@@ -20,8 +25,4 @@ class StabecoinInteractor:#(ABC):
         print(self.persistence)
         print(self.blockchain)
         # print(self.ui)
-
-    def test_mock(self, mock):
-        mock["kek"] = 23
-        pass
 
