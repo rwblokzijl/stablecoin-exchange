@@ -17,7 +17,7 @@ class TestMain(unittest.TestCase):
             print("ing")
             print("database")
             print("trustchain")
-            print("rest")
+            # print("rest")
             expected = out.getvalue().strip()
 
         self.assertEqual(output, expected)

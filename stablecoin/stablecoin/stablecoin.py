@@ -7,15 +7,21 @@ from stablecoin.ui.ui                   import UI
 
 class StabecoinInteractor:#(ABC):
 
-    def __init__(self, bank, persistence, blockchain, ui):
+    def __init__(self, bank, persistence, blockchain
+            # , ui
+            ):
         self.bank        = bank
         self.persistence = persistence
         self.blockchain  = blockchain
-        self.ui          = ui
+        # self.ui          = ui
 
     def print_struct(self):
         print(self.bank)
         print(self.persistence)
         print(self.blockchain)
-        print(self.ui)
+        # print(self.ui)
+
+    def test_mock(self, mock):
+        mock["kek"] = 23
+        pass
 

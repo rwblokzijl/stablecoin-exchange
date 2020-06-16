@@ -1,10 +1,27 @@
 from stablecoin.bank.ing import ING
+from stablecoin.settings import TestSettings
 
 import unittest
 import os
 
 oauth = None
 auth = None
+
+def authenticate(instance):
+    global oauth
+    global auth
+
+    if oauth is not None:
+        instance.oauth  = oauth
+        instance.auth   = auth
+        # print(instance.oauth)
+    else:
+        # print("Authing once")
+        instance.authenticate()
+
+        oauth  = instance.oauth
+        auth   = instance.auth
+    pass
 
 class TestING(unittest.TestCase):
 
@@ -13,19 +30,6 @@ class TestING(unittest.TestCase):
             client_id = fh.read().strip().decode("utf-8")
         self.instance = ING(client_id=client_id)
         self.cert_path = os.path.expanduser("~/.ssh/ing")
-        global oauth
-        global auth
-
-        if oauth is not None:
-            self.instance.oauth  = oauth
-            self.instance.auth   = auth
-            # print(self.instance.oauth)
-        else:
-            # print("Authing once")
-            self.instance.authenticate()
-
-            oauth  = self.instance.oauth
-            auth   = self.instance.auth
 
     def tearDown(self):
         if self.instance.oauth:
@@ -64,7 +68,6 @@ class TestING(unittest.TestCase):
         self.assertTrue(  self.instance.file_tls_key     , tls_key     )
 
     def test_keyfile_exist(self):
-
         self.assertTrue(  os.path.isfile( self.instance.file_signing_cer )  )
         self.assertTrue(  os.path.isfile( self.instance.file_signing_key )  )
         self.assertTrue(  os.path.isfile( self.instance.file_tls_cer     )  )
@@ -88,23 +91,30 @@ class TestING(unittest.TestCase):
     def test__str__(self):
         self.assertEqual(str(self.instance), "ing")
 
+    @unittest.skipUnless(TestSettings.do_remote_tests, "Remote tests disabled")
     def test_create_payment_request(self):
+        authenticate(self.instance)
         self.assertEqual(self.instance.create_payment_request(100), "create request")
 
+    @unittest.skipUnless(TestSettings.do_remote_tests, "Remote tests disabled")
     def test_initiate_payment(self):
+        authenticate(self.instance)
         self.assertEqual(self.instance.initiate_payment("INGB", 100), "initiate payment")
 
-    # def test_authenticate(self):
-    #     self.instance.authenticate()
-    #     self.assertTrue("access_token" in self.instance.oauth.token)
+    @unittest.skipUnless(TestSettings.do_remote_tests, "Remote tests disabled")
+    def test_authenticate(self):
+        self.instance.authenticate()
+        self.assertTrue("access_token" in self.instance.oauth.token)
 
+    @unittest.skipUnless(TestSettings.do_remote_tests, "Remote tests disabled")
     def test_get_greeting(self):
+        authenticate(self.instance)
         expected = {
             'message': 'Welcome to ING!',
             'id': 'SOME ID',
             'messageTimestamp': 'SOME TS'
         }
-        self.instance.authenticate()
+        # self.instance.authenticate()
         ans = self.instance.get(url="/greetings/single/").json()
 
         self.assertIn("message", ans)
