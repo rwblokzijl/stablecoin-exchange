@@ -36,7 +36,7 @@ class ING(Bank):
             self.tls_key     = fh.read()
 
     def authenticate(self):
-        auth   = HTTPSignatureAuth(
+        self.auth   = HTTPSignatureAuth(
                 algorithm="rsa-sha256",
                 headers=[ '(request-target)', 'date', 'digest' ],
                 key=self.signing_key,
@@ -47,7 +47,7 @@ class ING(Bank):
         self.oauth.cert=(self.file_tls_cer, self.file_tls_key)
         self.oauth.fetch_token(token_url=self.api_url+"/oauth2/token",
                 client_id=self.client_id,
-                auth=auth,
+                auth=self.auth,
                 )
 
     def __str__(self):
@@ -58,4 +58,16 @@ class ING(Bank):
 
     def initiate_payment(self, account, amount):
         return "initiate payment"
+
+    def get(self, url):
+        headers = {
+                'Accept': 'application/json',
+                }
+        get = self.oauth.request(
+                url=self.api_url+url,
+                headers=headers,
+                method="GET",
+                auth=self.auth,
+                )
+        return get
 

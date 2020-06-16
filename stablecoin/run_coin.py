@@ -13,7 +13,12 @@ def main(*args):
     persistence = Database()
     ui          = REST()
 
-    s = StabecoinInteractor(bank=bank, blockchain=blockchain, persistence=persistence, ui=ui)
+    s = StabecoinInteractor(
+            bank        = bank,
+            blockchain  = blockchain,
+            persistence = persistence,
+            ui          = ui
+            )
 
     s.print_struct()
 

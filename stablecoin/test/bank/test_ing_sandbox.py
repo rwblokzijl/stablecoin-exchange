@@ -23,3 +23,6 @@ class TestINGSandbox(TestING):
     def test__str__(self):
         self.assertEqual(str(self.instance), "ing sandbox")
 
+    def test_get_greeting(self):
+        "This api in not available for the sandbox"
+        pass

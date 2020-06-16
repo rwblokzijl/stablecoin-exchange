@@ -3,6 +3,9 @@ from stablecoin.bank.ing import ING
 import unittest
 import os
 
+oauth = None
+auth = None
+
 class TestING(unittest.TestCase):
 
     def setUp(self):
@@ -10,6 +13,19 @@ class TestING(unittest.TestCase):
             client_id = fh.read().strip().decode("utf-8")
         self.instance = ING(client_id=client_id)
         self.cert_path = os.path.expanduser("~/.ssh/ing")
+        global oauth
+        global auth
+
+        if oauth is not None:
+            self.instance.oauth  = oauth
+            self.instance.auth   = auth
+            # print(self.instance.oauth)
+        else:
+            # print("Authing once")
+            self.instance.authenticate()
+
+            oauth  = self.instance.oauth
+            auth   = self.instance.auth
 
     def tearDown(self):
         if self.instance.oauth:
@@ -78,7 +94,21 @@ class TestING(unittest.TestCase):
     def test_initiate_payment(self):
         self.assertEqual(self.instance.initiate_payment("INGB", 100), "initiate payment")
 
-    def test_authenticate(self):
+    # def test_authenticate(self):
+    #     self.instance.authenticate()
+    #     self.assertTrue("access_token" in self.instance.oauth.token)
+
+    def test_get_greeting(self):
+        expected = {
+            'message': 'Welcome to ING!',
+            'id': 'SOME ID',
+            'messageTimestamp': 'SOME TS'
+        }
         self.instance.authenticate()
-        self.assertTrue("access_token" in self.instance.oauth.token)
+        ans = self.instance.get(url="/greetings/single/").json()
+
+        self.assertIn("message", ans)
+        self.assertIn("id", ans)
+        self.assertIn("messageTimestamp", ans)
+        self.assertEqual(ans["message"], expected["message"])
 
