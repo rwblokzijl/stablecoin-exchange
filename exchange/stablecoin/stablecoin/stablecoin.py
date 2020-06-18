@@ -3,28 +3,32 @@ from stablecoin.blockchain.blockchain   import Blockchain
 from stablecoin.persistence.persistence import Persistence
 from stablecoin.ui.ui                   import UI
 
+from abc import ABC, abstractmethod
+
 import base64
 import datetime
 import hashlib
 import json
 import math
 
-# from abc import ABC, abstractmethod
+class Response(ABC):
+    pass
 
-# class StableCoin(ABC):
-#     @abstractmethod
-#     def assign_mony(self):
-#         pass
-
-class StabecoinInteractor:
-
-    def __init__(self, bank, persistence, blockchain
-            # , ui
-            ):
+class StableCoin(ABC):
+    def __init__(self, bank, persistence, blockchain):
         self.bank        = bank
         self.persistence = persistence
         self.blockchain  = blockchain
-        # self.ui          = ui
+
+    @abstractmethod
+    def start_transaction(self):
+        pass
+
+    @abstractmethod
+    def finish_transaction(self, transaction_id) -> Response:
+        pass
+
+class StabecoinInteractor(StableCoin):
 
     def print_struct(self):
         print(self.bank)
@@ -47,9 +51,9 @@ class StabecoinInteractor:
                 "destination_wallet"     : payment_data["destination_wallet"],
                 }
         serialised = json.dumps(relevant_data, sort_keys=True, ensure_ascii=True).encode('utf-8')
-        return base64.b64encode(hashlib.sha1(
+        return str(base64.b64encode(hashlib.sha1(
             serialised
-            ).digest())
+            ).digest()))
 
     def get_exchange_rate(self, collatoral_amount_cent):
         if not type(collatoral_amount_cent) == int:
@@ -57,7 +61,7 @@ class StabecoinInteractor:
         return math.ceil(collatoral_amount_cent * 0.99)
 
     def start_transaction(self, collatoral_amount_cent, destination_wallet):
-        payment_data = self.bank.initiate_payment(collatoral_amount_cent)
+        payment_data = self.bank.create_payment_request(collatoral_amount_cent)
 
         payment_data["status"]             = "open"
         payment_data["created"]            = datetime.datetime.now().timestamp()
@@ -77,5 +81,8 @@ class StabecoinInteractor:
         return transaction
 
     class VerificationError(Exception):
+        pass
+
+    class CommunicationError(Exception):
         pass
 

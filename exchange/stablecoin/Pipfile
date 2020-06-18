@@ -7,12 +7,14 @@ verify_ssl = true
 pylint = "*"
 jedi = "*"
 rope = "*"
+pytest-aiohttp = "*"
 
 [packages]
 pyipv8 = "*"
 requests-oauthlib = "*"
 requests-http-signature = "*"
 cryptography = "*"
+aiohttp = "*"
 
 [requires]
 python_version = "3.8"

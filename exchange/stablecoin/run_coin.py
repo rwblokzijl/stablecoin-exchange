@@ -5,13 +5,12 @@ from stablecoin.stablecoin import StabecoinInteractor
 from stablecoin.bank.ing              import ING
 from stablecoin.blockchain.trustchain import TrustChain
 from stablecoin.persistence.database  import Database
-# from stablecoin.ui.rest               import REST
+from stablecoin.ui.rest               import REST
 
 def main(*args):
     bank        = ING("")
     blockchain  = TrustChain()
     persistence = Database()
-    # ui          = REST()
 
     s = StabecoinInteractor(
             bank        = bank,
@@ -20,7 +19,10 @@ def main(*args):
             # ui          = ui,
             )
 
-    s.print_struct()
+    ui          = REST(s)
+    ui.start()
+
+    # s.print_struct()
 
 if __name__ == '__main__':
     import sys
