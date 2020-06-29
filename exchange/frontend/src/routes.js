@@ -50,7 +50,7 @@ const routes = [
         path: 'exchange',
         component: ExchangeView,
         name: 'Exchange',
-        meta: {description: 'Exchange'}
+        meta: { description: 'Exchange' }
       }, {
         path: 'bank',
         component: BankDashView,

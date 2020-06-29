@@ -19,3 +19,11 @@ class TestBank(Bank):
     def check_payment_status(self, tid):
         return "done"
 
+    def get_available_balance(self):
+        return 100
+
+    def list_transactions(self):
+        return list()
+
+    def payment_request_status(self, id):
+        return "done"

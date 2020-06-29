@@ -33,7 +33,7 @@ class TestMain(AioHTTPTestCase):
                 "eur": 100,
                 "token": 99
                 }
-        resp = await self.client.get("/exchange/e2t/100")
+        resp = await self.client.get("/exchange/e2t/rate/100")
         data = await resp.json()
         self.assertDictEqual(data, expected)
         assert resp.status == 200

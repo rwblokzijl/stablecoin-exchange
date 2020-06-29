@@ -59,6 +59,15 @@ class ING(Bank):
     def initiate_payment(self, account, amount):
         return "initiate payment"
 
+    def payment_request_status(self):
+        pass
+
+    def list_transactions(self):
+        pass
+
+    def get_available_balance(self):
+        pass
+
     def get(self, url):
         headers = {
                 'Accept': 'application/json',
