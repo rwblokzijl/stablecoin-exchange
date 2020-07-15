@@ -8,7 +8,7 @@ class Blockchain(PaymentSystem):
         self.register_with_identity(*args, **kwargs)
 
     @abstractmethod
-    def register_with_identity(self, *args, **kwargs):
+    def register_with_identity(self):
         pass
 
     @abstractmethod

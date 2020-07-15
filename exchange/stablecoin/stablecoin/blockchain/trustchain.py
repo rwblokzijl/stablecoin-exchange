@@ -1,11 +1,9 @@
 from stablecoin.blockchain.blockchain import Blockchain
 
 class TrustChain(Blockchain):
+
     def __str__(self):
         return "trustchain"
-
-    def register_with_identity(self, pubkey):
-        pass
 
     def get_identity(self):
         return self.identity

@@ -9,7 +9,7 @@ from stablecoin.ui.rest               import REST
 
 def main(*args):
     bank        = ING("")
-    blockchain  = TrustChain()
+    blockchain  = TrustChain("pubkey")
     persistence = Database()
 
     s = StabecoinInteractor(
