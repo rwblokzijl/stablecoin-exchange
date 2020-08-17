@@ -10,6 +10,7 @@ import datetime
 import hashlib
 import json
 import math
+import copy
 
 class Response(ABC):
     pass
@@ -25,7 +26,7 @@ class StableCoin(ABC):
         pass
 
     @abstractmethod
-    def initiate_destruction(self, collatoral_amount_cent, destination_wallet):
+    def initiate_destruction(self, collatoral_amount_cent, destination_account):
         pass
 
     @abstractmethod
@@ -52,15 +53,16 @@ class StabecoinInteractor(StableCoin):
             - Dest Wallet
         """
         relevant_data = {
-                "created"                : payment_data["created"],
+                "timestamp"              : payment_data["timestamp"],
                 "collatoral_amount_cent" : payment_data["collatoral_amount_cent"],
                 "token_amount_cent"      : payment_data["token_amount_cent"],
-                "destination_wallet"     : payment_data["destination_wallet"],
+                "destination_account"     : payment_data["destination_account"],
                 }
         serialised = json.dumps(relevant_data, sort_keys=True, ensure_ascii=True).encode('utf-8')
-        return str(base64.b64encode(hashlib.sha1(
+        return base64.b64encode(hashlib.sha1(
             serialised
-            ).digest()))
+            ).digest()).decode("utf-8")
+
 
     def get_exchange_rate_col_to_tok(self, collatoral_amount_cent):
         if not type(collatoral_amount_cent) == int:
@@ -74,14 +76,20 @@ class StabecoinInteractor(StableCoin):
 
     "Creation"
     def initiate_creation(self, collatoral_amount_cent, destination_wallet):
-        payment_data = self.bank.create_payment_request(collatoral_amount_cent)
+        payment_data = dict()
 
-        payment_data["status"]             = "open"
-        payment_data["created"]            = datetime.datetime.now().timestamp()
-        payment_data["token_amount_cent"]  = self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
-        payment_data["destination_wallet"] = destination_wallet
+        payment_data["type"]                   = "creation"
+        payment_data["timestamp"]              = datetime.datetime.now().timestamp()
+        payment_data["collatoral_amount_cent"] = collatoral_amount_cent
+        payment_data["token_amount_cent"]      = self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
 
-        payment_data["payment_id"] = self.generate_payment_id(payment_data)
+        bank_transaction_id = self.bank.create_payment_request(collatoral_amount_cent)
+
+        payment_data["bank_transaction_id"]    = bank_transaction_id
+
+        payment_data["destination_account"]    = destination_wallet
+        payment_data["payment_id"]             = self.generate_payment_id(payment_data)
+
         self.persistence.create_transaction(payment_data)
 
         return payment_data
@@ -95,14 +103,20 @@ class StabecoinInteractor(StableCoin):
 
     "Destruction"
     def initiate_destruction(self, token_amount_cent, destination_iban):
-        payment_data = self.blockchain.create_payment_request(token_amount_cent)
+        payment_data = dict()
 
-        payment_data["status"]                  = "open"
-        payment_data["created"]                 = datetime.datetime.now().timestamp()
-        payment_data["collatoral_amount_cent"]  = self.get_exchange_rate_tok_to_col(token_amount_cent)
-        payment_data["destination_iban"]        = destination_iban
+        payment_data["type"]                   = "destruction"
+        payment_data["timestamp"]              = datetime.datetime.now().timestamp()
+        payment_data["token_amount_cent"]      = token_amount_cent
+        payment_data["collatoral_amount_cent"] = self.get_exchange_rate_tok_to_col(token_amount_cent)
 
-        payment_data["payment_id"]              = self.generate_payment_id(payment_data)
+        chain_transaction_id = self.blockchain.create_payment_request(token_amount_cent)
+
+        payment_data["chain_transaction_id"]   = chain_transaction_id
+
+        payment_data["destination_account"]    = destination_iban
+        payment_data["payment_id"]             = self.generate_payment_id(payment_data)
+
         self.persistence.create_transaction(payment_data)
 
         return payment_data
@@ -110,8 +124,20 @@ class StabecoinInteractor(StableCoin):
     "Status"
 
     def transaction_status(self, transaction_id):
-        pass
+        transaction = copy.copy(self.persistence.get_payment_by_id(transaction_id))
 
+        if not transaction:
+            print(transaction_id)
+            print(self.persistence.persistence)
+            return None
+
+        if transaction["type"] == "creation":
+            transaction["status"] = self.bank.payment_request_status(transaction["bank_transaction_id"])
+        elif transaction["type"] == "destruction":
+            transaction["status"] = self.blockchain.payment_request_status(transaction["chain_transaction_id"])
+        else:
+            return None
+        return transaction
 
     class VerificationError(Exception):
         pass

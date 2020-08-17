@@ -20,7 +20,7 @@ class REST(UI):
 
             web.post('/exchange/t2e'       , self.exchange_token_to_euro),
             # web.get('/exchange/t2e/{base}' , self.exchange_rate_token_to_euro),
-            web.get('/exchange/t2e/payment/{payment_id}' , self.exchange_euro_to_token_status),
+            # web.get('/exchange/t2e/payment/{payment_id}' , self.exchange_euro_to_token_status),
         ])
 
     "Exchange E->T"
@@ -30,7 +30,7 @@ class REST(UI):
         return web.json_response({"eur": base, "token": ans})
 
     async def exchange_euro_to_token_status(self, request):
-        payment_id = request.match_info.get('payment_id')
+        payment_id = request.match_info.get('payment_id')#.encode("ascii")
 
         payment_data = self.stabecoin_interactor.transaction_status(payment_id)
 

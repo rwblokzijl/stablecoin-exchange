@@ -8,10 +8,12 @@ class PaymentSystem(ABC):
 
     @abstractmethod
     def create_payment_request(self, amount):
+        "Returns true if succesful"
         pass
 
     @abstractmethod
     def initiate_payment(self, account, amount):
+        "Returns true if succesful"
         pass
 
     @abstractmethod
