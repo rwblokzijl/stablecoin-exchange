@@ -77,6 +77,7 @@ class ChainStub(PaymentSystem):
                 "wallet": self.identity,
                 "counterparty": account
                 }
+        self.update_balance(account, amount)
         return True
 
     def get_available_balance(self, identity):
@@ -90,6 +91,11 @@ class ChainStub(PaymentSystem):
             self.ledger[wallet] = 0
         self.ledger[wallet] += amount
 
+    def get_balance(self, wallet):
+        if wallet not in self.ledger:
+            self.ledger[wallet] = 0
+        return self.ledger[wallet]
+
     def payment_done_trigger(self, transaction_id, counterparty):
         if transaction_id in self.transactions:
             "STUB WAY TO SUCCEED TRANSACTION"
@@ -97,7 +103,11 @@ class ChainStub(PaymentSystem):
                 self.transactions[transaction_id]["status"] = "successful"
                 self.transactions[transaction_id]["counterparty"] = "counterparty"
 
-                self.update_balance( counterparty, self.transactions[transaction_id]["amount"] )
+                self.update_balance( counterparty, -self.transactions[transaction_id]["amount"] )
+            return self.transactions[transaction_id]
+        else:
+            print("No such transaction")
+            return None
 
     def payment_request_status(self, transaction_id):
         if transaction_id in self.transactions:

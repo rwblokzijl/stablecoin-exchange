@@ -72,6 +72,10 @@ class BankStub(Bank):
             if self.transactions[transaction_id]["status"] != "successful":
                 self.transactions[transaction_id]["status"] = "successful"
                 self.transactions[transaction_id]["counterparty"] = "counterparty"
+            return self.transactions[transaction_id]
+        else:
+            print("No such transaction")
+            return None
 
     def payment_request_status(self, transaction_id):
         if transaction_id in self.transactions:

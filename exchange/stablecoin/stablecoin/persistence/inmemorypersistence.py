@@ -26,3 +26,8 @@ class InMemoryPersistence(ABC):
         if pid in self.persistence:
             print("WARNING: transaction with id exists, overwriting")
         self.persistence[pid] = payment_data
+
+    def update_transaction(self, payment_data):
+        pid = payment_data["payment_id"]
+        if pid in self.persistence:
+            self.persistence[pid] = payment_data
