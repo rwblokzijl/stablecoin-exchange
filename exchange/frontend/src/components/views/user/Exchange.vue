@@ -163,6 +163,7 @@ import Chart from 'chart.js'
 import Alert from '../../widgets/Alert'
 import InfoBox from '../../widgets/InfoBox'
 import ProcessInfoBox from '../../widgets/ProcessInfoBox'
+const axios = require('axios')
 
 export default {
   name: 'Wallet',
@@ -194,6 +195,8 @@ export default {
     }
   },
   mounted () {
+    axios.get('/api/exchange/e2t/rate').then(response =>
+      console.log(response.data))
     this.$nextTick(() => {
       var ctx = document.getElementById('trafficBar').getContext('2d')
       var config = {

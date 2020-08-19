@@ -42,13 +42,27 @@ compiler.plugin('compilation', function (compilation) {
 })
 
 // proxy api requests
-Object.keys(proxyTable).forEach(function (context) {
-  var options = proxyTable[context]
-  if (typeof options === 'string') {
-    options = { target: options }
-  }
-  app.use(proxyMiddleware(options.filter || context, options))
-})
+// Object.keys(proxyTable).forEach(function (context) {
+//   var options = proxyTable[context]
+//   if (typeof options === 'string') {
+//     options = { target: options }
+//   }
+  // var options = {
+  //   "/api": {
+  //     target: "http://localhost:8000",
+  //     pathRewrite: { "/api": "" },
+  //     changeOrigin: true,
+  //     secure: false,
+  //     logLevel: "debug"
+  //   }
+  // };
+app.use('/api', proxyMiddleware({
+  target: 'http://localhost:8000',
+  changeOrigin: true,
+  pathRewrite: { "/api": "" },
+}));
+  // app.use(proxyMiddleware(options.filter || context, options))
+// })
 
 // handle fallback for HTML5 history API
 app.use(require('connect-history-api-fallback')())

@@ -2,7 +2,7 @@
   <div :class="['wrapper', classes]">
 
     <!-- Horizontal bar at top. Contains messages, notifications, tasks and user menu -->
-    <dash-header :user="user"></dash-header>
+    <dash-header :account="account" :user="user"></dash-header>
 
     <!-- Left side column. contains the logo and sidebar -->
     <sidebar :user="user" />
@@ -54,7 +54,9 @@ export default {
       classes: {
         fixed_layout: config.fixedLayout,
         hide_logo: config.hideLogoOnMobile
-      }
+      },
+      account: 'ABC',
+      accounts: ['ABC', 'DEF', 'GHI']
     }
   },
   computed: {
