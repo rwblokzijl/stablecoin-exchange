@@ -18,6 +18,9 @@ class InMemoryPersistence(ABC):
     def __str__(self):
         return "In Memory Persistence"
 
+    def get_all(self):
+        return self.persistence
+
     def get_payment_by_id(self, transaction_id):
         return self.persistence.get(transaction_id) or None
 

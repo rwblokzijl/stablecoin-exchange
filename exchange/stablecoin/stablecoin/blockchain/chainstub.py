@@ -64,7 +64,7 @@ class ChainStub(PaymentSystem):
         return transaction_id
 
     def initiate_payment(self, account, amount):
-        "Returns true if successful"
+        "Returns transaction_id if successful"
         now = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 
         transaction_id = self.get_new_id()
@@ -78,7 +78,7 @@ class ChainStub(PaymentSystem):
                 "counterparty": account
                 }
         self.update_balance(account, amount)
-        return True
+        return transaction_id
 
     def get_available_balance(self, identity):
         return 10000

@@ -1,5 +1,6 @@
-from stablecoin.ui.rest import REST
-from stablecoin.stablecoin import StabecoinInteractor
+from stablecoin.stablecoin  import StablecoinInteractor
+from stablecoin.transaction import Transaction
+from stablecoin.ui.rest     import REST
 
 import unittest
 from unittest.mock import Mock
@@ -35,7 +36,7 @@ class TestRESTCreateLoop(TestREST):
                 "token": 99
                 }
         self.si.get_exchange_rate_col_to_tok.return_value = 99
-        resp = await self.client.get("/exchange/e2t/rate/100")
+        resp = await self.client.get("/exchange/e2t/rate", params={'base':100})
         data = await resp.json()
         self.assertDictEqual(data, expected)
         self.assertEqual(
@@ -54,11 +55,11 @@ class TestRESTCreateLoop(TestREST):
                 "token": 198
                 }
         self.si.get_exchange_rate_col_to_tok.return_value = 99
-        resp1 = await self.client.get("/exchange/e2t/rate/100")
+        resp1 = await self.client.get("/exchange/e2t/rate", params={'base':100} )
         data1 = await resp1.json()
 
         self.si.get_exchange_rate_col_to_tok.return_value = 198
-        resp2 = await self.client.get("/exchange/e2t/rate/200")
+        resp2 = await self.client.get("/exchange/e2t/rate", params={'base':200})
         data2 = await resp2.json()
 
         self.assertDictEqual(data1, expected1)
@@ -74,7 +75,7 @@ class TestRESTCreateLoop(TestREST):
 
     @unittest_run_loop
     async def test_exchange_euro_to_token_success(self):
-        self.si.initiate_creation.return_value = ""
+        self.si.initiate_creation.return_value = {'status':'done'}
         resp = await self.client.post("/exchange/e2t", data={
             "collatoral_cent": 100,
             "dest_wallet": "ASDFASDF",
@@ -121,7 +122,7 @@ class TestRESTCreateLoop(TestREST):
     @unittest_run_loop
     async def test_exchange_euro_to_token_internal_error(self):
         def error(collatoral_amount_cent, destination_wallet):
-            raise StabecoinInteractor.CommunicationError
+            raise StablecoinInteractor.CommunicationError
         self.si.initiate_creation.side_effect = error
         resp = await self.client.post("/exchange/e2t", data={
             "collatoral_cent": 100,
@@ -173,7 +174,7 @@ class TestRESTDestroyLoop(TestREST):
                 "token": 101
                 }
         self.si.get_exchange_rate_col_to_tok.return_value = 101
-        resp = await self.client.get("/exchange/e2t/rate/100")
+        resp = await self.client.get("/exchange/e2t/rate", params={'base':100})
         data = await resp.json()
         self.assertDictEqual(data, expected)
         self.assertEqual(
@@ -192,11 +193,11 @@ class TestRESTDestroyLoop(TestREST):
                 "token": 198
                 }
         self.si.get_exchange_rate_col_to_tok.return_value = 99
-        resp1 = await self.client.get("/exchange/e2t/rate/100")
+        resp1 = await self.client.get("/exchange/e2t/rate", params={'base':100})
         data1 = await resp1.json()
 
         self.si.get_exchange_rate_col_to_tok.return_value = 198
-        resp2 = await self.client.get("/exchange/e2t/rate/200")
+        resp2 = await self.client.get("/exchange/e2t/rate", params={'base':200})
         data2 = await resp2.json()
 
         self.assertDictEqual(data1, expected1)
@@ -231,7 +232,7 @@ class TestRESTDestroyLoop(TestREST):
                 "collatoral_amount_cent" : 100,
                 "provider"               : "bank",
                 "timeout"                : 3000,
-                "status"                 : "PAYMENT_PENDING",
+                "status"                 : Transaction.Status.PAYMENT_PENDING,
                 "created"                : 100000.12345,
                 "destination_iban  "     : d_iban,
                 "payment_id"             : "somehash",
@@ -239,7 +240,7 @@ class TestRESTDestroyLoop(TestREST):
 
 
         self.si.initiate_destruction.return_value = payment_data
-        self.si.transaction_status.return_value = payment_data
+        self.si.transaction_status.return_value = Transaction.Status.PAYMENT_PENDING
 
         # setup transaction
         resp = await self.client.post("/exchange/t2e", data={
@@ -258,14 +259,11 @@ class TestRESTDestroyLoop(TestREST):
                 payment_data
                 )
 
-        payment_data["status"] = "CONFIRMED"
-
+        self.si.Transaction.Status.PAYMENT_DONE
 
         # excecute get status
-        # setup transaction
-        resp = await self.client.get("/exchange/t2e/payment/somehash", data={
-            "token_amount_cent": 101,
-            "destination_iban": d_iban
+        resp = await self.client.get("/exchange/payment", params={
+            "payment_id" : data["payment_id"]
             })
         data = await resp.json()
 
@@ -274,13 +272,10 @@ class TestRESTDestroyLoop(TestREST):
                 resp.status,
                 200
                 )
+
         self.assertEqual(
-                resp.status,
-                200
-                )
-        self.assertDictEqual(
                 data,
-                payment_data
+                "Waiting for payment"
                 )
 
     @unittest_run_loop
@@ -300,7 +295,7 @@ class TestRESTDestroyLoop(TestREST):
 
 
         self.si.initiate_destruction.return_value = payment_data
-        self.si.transaction_status.return_value = payment_data
+        self.si.transaction_status.return_value = Transaction.Status.PAYMENT_PENDING
 
         # setup transaction
         resp = await self.client.post("/exchange/t2e", data={
@@ -321,10 +316,11 @@ class TestRESTDestroyLoop(TestREST):
 
         payment_data["status"] = "pending"
 
-
         # excecute get status
         # setup transaction
-        resp = await self.client.get("/exchange/t2e/payment/somehash")
+        resp = await self.client.get("/exchange/payment", params={
+            "payment_id" : "somehash"
+            })
         data = await resp.json()
 
         # assert
@@ -334,7 +330,7 @@ class TestRESTDestroyLoop(TestREST):
                 )
         self.assertEqual(
                 data,
-                payment_data
+                "Waiting for payment"
                 )
 
     @unittest_run_loop

@@ -21,6 +21,10 @@ class StableCoin(ABC):
         self.bank        = bank
         self.persistence = persistence
         self.blockchain  = blockchain
+        self.provider_map = {
+                "bank" : self.bank,
+                "blockchain" : self.blockchain
+                }
 
     @abstractmethod
     def initiate_creation(self):
@@ -35,10 +39,10 @@ class StableCoin(ABC):
         pass
 
     @abstractmethod
-    def finish_creation_payment(self, transaction_id) -> Response:
+    def attempt_finish_creation_payment(self, transaction_id) -> Response:
         pass
 
-class StabecoinInteractor(StableCoin):
+class StablecoinInteractor(StableCoin):
 
     def complete_payment(self, payment_id, counterparty):
         transaction = self.persistence.get_payment_by_id(payment_id)
@@ -46,13 +50,27 @@ class StabecoinInteractor(StableCoin):
         if transaction is None:
             print("no transaction found for id " + payment_id)
             return False
-        if transaction["type"] == "creation":
-            return self.bank.payment_done_trigger(transaction["bank_transaction_id"], counterparty)
-        elif transaction["type"] == "destruction":
-            return self.blockchain.payment_done_trigger(transaction["chain_transaction_id"], counterparty)
-        else:
-            print("invalid transaction type")
-            return False
+
+        if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
+            return True
+
+        ans = self.provider_map[transaction["payment_provider"]].payment_done_trigger(transaction["payment_provider_id"], counterparty)
+        if ans:
+            transaction.confirm_payment(counterparty)
+            self.persistence.update_transaction(transaction)
+        return ans
+
+    def get_wallet_transactions(self, wallet):
+        return [transaction for transaction in self.persistence.get_all().values() if
+                (transaction['payment_provider'] == 'blockchain' and transaction.get("counterparty_account") == wallet) or
+                (transaction['payout_provider'] == 'blockchain' and transaction["payout_account"] == wallet)
+                ]
+
+    def get_iban_transactions(self, iban):
+        return [transaction for transaction in self.persistence.get_all().values() if
+                (transaction['payment_provider'] == 'bank' and transaction.get("counterparty_account") == iban) or
+                (transaction['payout_provider'] == 'bank' and transaction["payout_account"] == iban)
+                ]
 
     def get_wallet_balance(self, wallet):
         return self.blockchain.get_balance(wallet)
@@ -61,25 +79,6 @@ class StabecoinInteractor(StableCoin):
         print(self.bank)
         print(self.persistence)
         print(self.blockchain)
-
-    def generate_payment_id(self, payment_data):
-        """
-        Seed for ID:
-            - Creation date
-            - Euro Amount
-            - Euro Token Amount
-            - Dest Wallet
-        """
-        relevant_data = {
-                "timestamp"              : payment_data["timestamp"],
-                "collatoral_amount_cent" : payment_data["collatoral_amount_cent"],
-                "token_amount_cent"      : payment_data["token_amount_cent"],
-                "destination_account"     : payment_data["destination_account"],
-                }
-        serialised = json.dumps(relevant_data, sort_keys=True, ensure_ascii=True).encode('utf-8')
-        return base64.b64encode(hashlib.sha1(
-            serialised
-            ).digest()).decode("utf-8")
 
     def get_exchange_rate_col_to_tok(self, collatoral_amount_cent):
         if not type(collatoral_amount_cent) == int:
@@ -93,58 +92,57 @@ class StabecoinInteractor(StableCoin):
 
     "Creation"
     def initiate_creation(self, collatoral_amount_cent, destination_wallet):
-        payment_data = dict()
 
-        # payment_data = Transaction(
-        #         "bank", "eur",
-        #         "blockchain", "eurotoken"
-        #         collatoral_amount_cent
-        #         )
+        payout_amount=self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
 
-        payment_data["type"]                   = "creation"
-        payment_data["paidout"]                = False
-        payment_data["timestamp"]              = datetime.datetime.now().timestamp()
-        payment_data["collatoral_amount_cent"] = collatoral_amount_cent
-        payment_data["token_amount_cent"]      = self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
+        payment_data = Transaction(
+                payment_provider="bank", payment_currency="euro",
+                payout_provider="blockchain", payout_currency="eurotoken",
+                payout_account=destination_wallet,
+                amount=collatoral_amount_cent, payout_amount=payout_amount
+                )
 
         bank_transaction_id = self.bank.create_payment_request(collatoral_amount_cent)
 
-        payment_data["bank_transaction_id"]    = bank_transaction_id
-
-        payment_data["destination_account"]    = destination_wallet
-        payment_data["payment_id"]             = self.generate_payment_id(payment_data)
+        payment_data.start_payment(
+                payment_provider_id=bank_transaction_id,
+                expected_payment_account=None
+                )
 
         self.persistence.create_transaction(payment_data)
 
-        return payment_data
+        return payment_data.get_data()
 
-    def finish_creation_payment(self, transaction_id):
-        if self.bank.payment_request_status(transaction_id) != "done":
+    def attempt_finish_creation_payment(self, transaction):
+        if transaction["status"] != transaction.Status.PAYMENT_DONE:
             return False
-        transaction = self.persistence.get_payment_by_id(transaction_id)
-        self.blockchain.transfer("ASDFASDF", transaction["token_amount_cent"])
+        payout_transaction_id = self.provider_map[transaction["payout_provider"]].initiate_payment(transaction["payout_account"], transaction["payout_amount"])
+        transaction.payout_done(payout_transaction_id)
+        self.persistence.update_transaction(transaction)
         return transaction
 
     "Destruction"
     def initiate_destruction(self, token_amount_cent, destination_iban):
-        payment_data = dict()
 
-        payment_data["type"]                   = "destruction"
-        payment_data["paidout"]                 = False
-        payment_data["timestamp"]              = datetime.datetime.now().timestamp()
-        payment_data["token_amount_cent"]      = token_amount_cent
-        payment_data["collatoral_amount_cent"] = self.get_exchange_rate_tok_to_col(token_amount_cent)
+        payout_amount = self.get_exchange_rate_tok_to_col(token_amount_cent)
+
+        payment_data = Transaction(
+                payment_provider="blockchain", payment_currency="eurotoken",
+                payout_provider="bank", payout_currency="euro",
+                payout_account=destination_iban,
+                amount=token_amount_cent, payout_amount=payout_amount
+                )
 
         chain_transaction_id = self.blockchain.create_payment_request(token_amount_cent)
 
-        payment_data["chain_transaction_id"]   = chain_transaction_id
-
-        payment_data["destination_account"]    = destination_iban
-        payment_data["payment_id"]             = self.generate_payment_id(payment_data)
+        payment_data.start_payment(
+                payment_provider_id=chain_transaction_id,
+                expected_payment_account=None
+                )
 
         self.persistence.create_transaction(payment_data)
 
-        return payment_data
+        return payment_data.get_data()
 
     "Status"
 
@@ -154,20 +152,9 @@ class StabecoinInteractor(StableCoin):
         if not transaction:
             return None
 
-        if transaction["type"] == "creation":
-            transaction["status"] = self.bank.payment_request_status(transaction["bank_transaction_id"])
-            if transaction["status"] == "successful" and not transaction["paidout"]:
-                self.blockchain.initiate_payment(transaction["destination_account"], transaction["token_amount_cent"])
-                transaction["paidout"] = True
-        elif transaction["type"] == "destruction":
-            transaction["status"] = self.blockchain.payment_request_status(transaction["chain_transaction_id"])
-            if transaction["status"] == "successful" and not transaction["paidout"]:
-                self.bank.initiate_payment(transaction["destination_account"], transaction["collatoral_amount_cent"])
-                transaction["paidout"] = True
-        else:
-            return None
-        self.persistence.update_transaction(transaction)
-        return transaction
+        self.attempt_finish_creation_payment(transaction)
+
+        return transaction.get_data()
 
     class VerificationError(Exception):
         pass

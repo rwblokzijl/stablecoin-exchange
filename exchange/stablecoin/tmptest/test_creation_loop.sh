@@ -14,7 +14,7 @@ echo $PID
 STATUS=$(curl -sG --data-urlencode payment_id=$PID http://localhost:8000/exchange/payment)
 STATUS=$(curl -sG --data-urlencode payment_id=$PID http://localhost:8000/exchange/payment)
 STATUS=$(curl -sG --data-urlencode payment_id=$PID http://localhost:8000/exchange/payment)
-echo $STATUS | jq '.status'
+echo $STATUS #| jq '.status'
 
 # Get balance
 BALANCE=$(curl -sG --data-urlencode wallet=$WALLET http://localhost:8000/transactions/balance)

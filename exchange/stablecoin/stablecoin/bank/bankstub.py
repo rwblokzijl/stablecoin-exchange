@@ -44,7 +44,7 @@ class BankStub(Bank):
         return transaction_id
 
     def initiate_payment(self, account, amount):
-        "Returns true if successful"
+        "Returns transaction_id if successful"
         now = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 
         transaction_id = self.get_new_id()

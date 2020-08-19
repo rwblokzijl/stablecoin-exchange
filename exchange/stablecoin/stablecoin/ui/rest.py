@@ -1,17 +1,19 @@
 from stablecoin.ui.ui import UI
-from stablecoin.stablecoin import StabecoinInteractor
+from stablecoin.stablecoin import StablecoinInteractor
+from stablecoin.transaction import Transaction
 
 from aiohttp import web
 
 from abc import ABC
+from copy import copy
 
 class Request(ABC):
     pass
 
 class REST(UI):
 
-    def __init__(self, stabecoin_interactor, test_config=None):
-        self.stabecoin_interactor = stabecoin_interactor
+    def __init__(self, stablecoin_interactor, test_config=None):
+        self.stablecoin_interactor = stablecoin_interactor
         self.app = web.Application()
         self.app.add_routes([
 
@@ -39,7 +41,7 @@ class REST(UI):
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
         if "counterparty" not in data:
             raise web.HTTPBadRequest(reason="Missing 'counterparty'")
-        status = self.stabecoin_interactor.complete_payment(data["payment_id"], data["counterparty"])
+        status = self.stablecoin_interactor.complete_payment(data["payment_id"], data["counterparty"])
         if status:
             return web.json_response()
         else:
@@ -52,7 +54,7 @@ class REST(UI):
             base = int(base)
         except:
             raise web.HTTPBadRequest(reason="'base' should be an integer amount of cents")
-        ans  = self.stabecoin_interactor.get_exchange_rate_col_to_tok(base)
+        ans  = self.stablecoin_interactor.get_exchange_rate_col_to_tok(base)
         return web.json_response({"eur": base, "token": ans})
 
     async def exchange_status(self, request):
@@ -62,7 +64,9 @@ class REST(UI):
 
         payment_id = request.query["payment_id"]
 
-        payment_data = self.stabecoin_interactor.transaction_status(payment_id)
+        payment_data = self.stablecoin_interactor.transaction_status(payment_id)
+
+        payment_data["status"] = self.clean_status(payment_data["status"])
 
         return web.json_response(payment_data)
 
@@ -89,14 +93,34 @@ class REST(UI):
             raise web.HTTPBadRequest(reason="Missing 'dest_wallet' field.")
         return request_data["dest_wallet"]
 
+    def clean_transaction_status(self, transaction):
+        t = copy(transaction)
+        if "status" in t:
+            t["status"] = self.clean_status(t["status"])
+        return t
+
+    def clean_status(self, status):
+        if status == Transaction.Status.CREATED:
+            return "Transaction created"
+        elif status == Transaction.Status.PAYMENT_PENDING:
+            return "Waiting for payment"
+        elif status == Transaction.Status.PAYMENT_DONE:
+            return "Payment Done"
+        elif status == Transaction.Status.PAYOUT_DONE:
+            return "Payout Done"
+        else:
+            return "Invalid Status"
+
     def start_creation(self, collatoral_cent, dest_wallet):
         try:
-            return self.stabecoin_interactor.initiate_creation(
+            data = self.stablecoin_interactor.initiate_creation(
                     collatoral_amount_cent=collatoral_cent,
                     destination_wallet=dest_wallet
                     )
+            data["status"] = self.clean_status(data["status"])
+            return data
 
-        except StabecoinInteractor.CommunicationError:
+        except StablecoinInteractor.CommunicationError:
             raise web.HTTPInternalServerError()
 
     "Exchange T->E"
@@ -106,7 +130,7 @@ class REST(UI):
             base = int(base)
         except:
             raise web.HTTPBadRequest(reason="'base' should be an integer amount of cents")
-        ans  = self.stabecoin_interactor.get_exchange_rate_tok_to_col(base)
+        ans  = self.stablecoin_interactor.get_exchange_rate_tok_to_col(base)
         return web.json_response({"token": base, "eur": ans})
 
     async def exchange_token_to_euro(self, request):
@@ -134,29 +158,37 @@ class REST(UI):
 
     def start_destruction(self, token_amount_cent, iban):
         try:
-            return self.stabecoin_interactor.initiate_destruction(
+            data =  self.stablecoin_interactor.initiate_destruction(
                     token_amount_cent=token_amount_cent,
                     destination_iban=iban
                     )
-        except StabecoinInteractor.CommunicationError:
+            data["status"] = self.clean_status(data["status"])
+            return data
+        except StablecoinInteractor.CommunicationError:
             raise web.HTTPInternalServerError()
 
     async def get_iban_transactions(self, request):
         if "iban" not in request.query:
             raise web.HTTPBadRequest(reason="Missing 'iban'")
         iban = request.query["iban"]
+        transactions = self.stablecoin_interactor.get_iban_transactions(iban)
+        transactions2 = [self.clean_transaction_status(t.get_data()) for t in transactions]
+        return web.json_response(transactions2)
 
     async def get_wallet_transactions(self, request):
         if "wallet" not in request.query:
             raise web.HTTPBadRequest(reason="Missing 'wallet'")
         wallet = request.query["wallet"]
+        transactions = self.stablecoin_interactor.get_wallet_transactions(wallet)
+        transactions2 = [self.clean_transaction_status(t.get_data()) for t in transactions]
+        return web.json_response(transactions2)
 
     async def get_wallet_balance(self, request):
         if "wallet" not in request.query:
             raise web.HTTPBadRequest(reason="Missing 'wallet'")
         wallet = request.query["wallet"]
 
-        balance = self.stabecoin_interactor.get_wallet_balance(wallet)
+        balance = self.stablecoin_interactor.get_wallet_balance(wallet)
 
         return web.json_response({
             "wallet": wallet,
