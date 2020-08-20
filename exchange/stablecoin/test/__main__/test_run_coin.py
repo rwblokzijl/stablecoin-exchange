@@ -47,7 +47,7 @@ class TestMain(AioHTTPTestCase):
         dest_wallet = "ASDFASDF"
 
         # excecute
-        resp = await self.client.post("/exchange/e2t", data={
+        resp = await self.client.post("/exchange/e2t", json={
             "collatoral_cent": collatoral_amount_cent,
             "dest_wallet": dest_wallet,
             })
@@ -87,19 +87,19 @@ class V1AcceptanceTests(AioHTTPTestCase):
                 )
 
     async def complete_payment(self, payment_id, counterparty):
-        resp3 = await self.client.post("/exchange/complete", data={'payment_id':payment_id, 'counterparty':counterparty})
+        resp3 = await self.client.post("/exchange/complete", json={'payment_id':payment_id, 'counterparty':counterparty})
 
         self.assertEqual(
                 resp3.status,
                 200)
 
     async def create_transaction(self, amount, wallet):
-        resp1 = await self.client.post("/exchange/e2t", data={'collatoral_cent':amount, 'dest_wallet':wallet})
+        resp1 = await self.client.post("/exchange/e2t", json={'collatoral_cent':amount, 'dest_wallet':wallet})
         data1 = await resp1.json()
         return data1
 
     async def destroy_transaction(self, amount, iban):
-        resp1 = await self.client.post("/exchange/t2e", data={'token_amount_cent':amount, 'destination_iban':iban})
+        resp1 = await self.client.post("/exchange/t2e", json={'token_amount_cent':amount, 'destination_iban':iban})
         data1 = await resp1.json()
         return data1
 

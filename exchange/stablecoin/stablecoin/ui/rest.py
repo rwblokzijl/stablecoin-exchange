@@ -35,7 +35,7 @@ class REST(UI):
         ])
 
     async def complete_payment(self, request):
-        data = dict(await request.post())
+        data = dict(await request.json())
         # print(data["payment_id"])
         if "payment_id" not in data:
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
@@ -71,7 +71,7 @@ class REST(UI):
         return web.json_response(payment_data)
 
     async def exchange_euro_to_token(self, request):
-        data = dict(await request.post())
+        data = dict(await request.json())
 
         collatoral_cent = self.validate_euro_to_token_request_collatoral(data)
         dest_wallet     = self.validate_euro_to_token_destination_address(data)
@@ -134,7 +134,7 @@ class REST(UI):
         return web.json_response({"token": base, "eur": ans})
 
     async def exchange_token_to_euro(self, request):
-        data = dict(await request.post())
+        data = dict(await request.json())
 
         token_amount_cent = self.validate_token_to_euro_token_amount(data)
         iban              = self.validate_token_to_euro_iban(data)
