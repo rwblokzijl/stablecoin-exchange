@@ -9,14 +9,14 @@
         <info-box color-class="bg-green"
                   :icon-classes="['fa', 'fa-plus']"
                   text="Euro -> Eurotoken"
-                  number="1.01€/T"></info-box>
+                  v-bind:number="'1.00€ -> ' + rateE2T + 'ET'"></info-box>
       </div>
       <!-- /.col -->
       <div class="col-md-3 col-sm-6 col-xs-12">
         <info-box color-class="bg-blue"
                   :icon-classes="['fa', 'fa-minus']"
                   text="Eurotoken -> Euro"
-                  number="0.99T/€"></info-box>
+                  v-bind:number="'1.00ET -> ' + rateT2E + '€'"></info-box>
       </div>
       <!-- /.col -->
     </div>
@@ -27,9 +27,9 @@
       <!-- /.col -->
       <div class="col-md-3 col-sm-6 col-xs-12">
         <info-box color-class="bg-yellow"
-                  :icon-classes="['fa', 'fa-eur']"
-                  text="Current Balance"
-                  number="2,000"></info-box>
+                  :icon-classes="['fa', 'fa-money']"
+                  text="Token Balance"
+                  v-bind:number="balance.toLocaleString() + 'ET'"></info-box>
       </div>
       <!-- /.col -->
     </div>
@@ -41,13 +41,14 @@
       </div>
       <!-- with characthers -->
       <div class="col-md-6 col-xs-12">
-        <label>Amount (EuroToken)</label>
+        <label>Amount (Euro)</label>
         <div class="input-group">
           <span class="input-group-addon">
-            <i class="fa fa-fw fa-eur" aria-hidden="true"></i>
+            <i class="fa fa-fw fa-eur" aria-hidden="true" ></i>
           </span>
-          <input class="form-control" type="text">
-          <span class="input-group-addon">.00</span>
+          <input class="form-control" v-model="exchangeAmountE2T" type="text"
+          placeholder="0.00" @keypress="onlyForCurrencyE2T" >
+          <span class="input-group-addon"> : {{exchangeAmountE2TConverted}}ET</span>
         </div>
       </div>
     </div>
@@ -65,6 +66,11 @@
         </div>
       </div>
     </div>
+    <div class="row">
+      <div class="col-md-6 col-xs-12">
+        <a v-on:click="exchangeE2T" class="btn btn-primary" role="button">Convert</a>
+      </div>
+    </div>
 
     <div class="row">
       <div class="col-xs-12">
@@ -75,10 +81,11 @@
         <label>Amount (EuroToken)</label>
         <div class="input-group">
           <span class="input-group-addon">
-            <i class="fa fa-fw fa-eur" aria-hidden="true"></i>
+            <i class="fa fa-fw fa-money" aria-hidden="true" ></i>
           </span>
-          <input class="form-control" type="text">
-          <span class="input-group-addon" placeholder="12">.00</span>
+          <input class="form-control" v-model="exchangeAmountT2E" type="text"
+          placeholder="0.00" @keypress="onlyForCurrencyT2E" >
+          <span class="input-group-addon"> : € {{exchangeAmountT2EConverted}}</span>
         </div>
       </div>
     </div>
@@ -86,10 +93,13 @@
       <div class="col-md-6 col-xs-12">
         <div class="form-group">
           <label>IBAN</label>
-          <div class="input-group">
-            <input class="form-control" placeholder="NL91 ABNA 0417 1643 00" type="text">
-          </div>
+          <input class="form-control" placeholder="NL91 ABNA 0417 1643 00" type="text">
         </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 col-xs-12">
+        <a v-on:click="exchangeT2E" class="btn btn-primary" role="button">Convert</a>
       </div>
     </div>
 
@@ -104,49 +114,32 @@
           class="table table-bordered table-striped dataTable">
           <thead>
             <tr role="row">
-              <th style="width: 167px;" colspan="1" rowspan="1" tabindex="0"> Date </th>
-              <th style="width: 182px;" colspan="1" rowspan="1" tabindex="0"> Amount </th>
-              <th style="width: 142px;" colspan="1" rowspan="1" tabindex="0"> In/Out </th>
-              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0"> Description </th>
-              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0"> Status </th>
+              <th style="width: 167px;" colspan="1" rowspan="1" tabindex="0">Created</th>
+              <th style="width: 182px;" colspan="1" rowspan="1" tabindex="0">Amount</th>
+              <th style="width: 142px;" colspan="1" rowspan="1" tabindex="0">Paid</th>
+              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0">ID</th>
+              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0">Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr class="even" role="row">
-              <td>2020 May 01 15:19</td>
-              <td>2,567.00 €T</td>
-              <td>In</td>
-              <td>Salary April</td>
-              <td>Confirmed</td>
-            </tr>
-            <tr class="odd" role="row">
-              <td>2020 April 01 12:48</td>
-              <td>2,567.00 €T</td>
-              <td>In</td>
-              <td>Salary March</td>
-              <td>Confirmed</td>
-            </tr>
-            <tr class="even" role="row">
-              <td>2020 March 02 11:34</td>
-              <td>2,567.00 €T</td>
-              <td>In</td>
-              <td>Salary February</td>
-              <td>Confirmed</td>
-            </tr>
-            <tr class="odd" role="row">
-              <td>2020 February 02 8:23</td>
-              <td>2,567.00 €T</td>
-              <td>In</td>
-              <td>Salary January</td>
-              <td>Confirmed</td>
+            <tr v-for="transaction in transactions" class="even" role="row">
+              <td>{{transaction.created_on}}</td>
+              <td>{{transaction.payout_amount}} {{transaction.payout_currency}}</td>
+              <td>{{transaction.amount}} {{transaction.payment_currency}}</td>
+              <td>{{transaction.payment_id}}</td>
+              <td>
+              <a v-on:click="confirmTransaction(transaction.payment_id)" class="btn btn-primary" role="button">
+                {{transaction.status}}
+              </a>
+              </td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
-              <th colspan="1" rowspan="1">Date</th>
+              <th colspan="1" rowspan="1">Created</th>
               <th colspan="1" rowspan="1">Amount</th>
-              <th colspan="1" rowspan="1">In/Out</th>
-              <th colspan="1" rowspan="1">Description</th>
+              <th colspan="1" rowspan="1">Paid</th>
+              <th colspan="1" rowspan="1">ID</th>
               <th colspan="1" rowspan="1">Status</th>
             </tr>
           </tfoot>
@@ -166,58 +159,116 @@ import ProcessInfoBox from '../../widgets/ProcessInfoBox'
 const axios = require('axios')
 
 export default {
-  name: 'Wallet',
+  name: 'Exchange',
   components: {
     Alert,
     InfoBox,
     ProcessInfoBox
   },
-  data () {
+  data: function() {
     return {
-      generateRandomNumbers (numbers, max, min) {
-        var a = []
-        for (var i = 0; i < numbers; i++) {
-          a.push(Math.floor(Math.random() * (max - min + 1)) + max)
-        }
-        return a
-      }
+      exchangeAmountE2T: null,
+      exchangeAmountT2E: null,
+      balanceCent: 0,
+      rateE2Tcent: 99,
+      rateT2Ecent: 99,
+      transactions: []
     }
   },
   computed: {
-    coPilotNumbers () {
-      return this.generateRandomNumbers(12, 1000000, 10000)
+    exchangeAmountE2TConverted() {
+      return (this.exchangeAmountE2T * this.rateE2Tcent / 100).toFixed(2)
     },
-    personalNumbers () {
-      return this.generateRandomNumbers(12, 1000000, 10000)
+    exchangeAmountT2EConverted() {
+      return (this.exchangeAmountT2E * this.rateT2Ecent / 100).toFixed(2)
+    },
+    rateE2T() {
+      return (this.rateE2Tcent / 100).toFixed(2)
+    },
+    rateT2E() {
+      return (this.rateT2Ecent / 100).toFixed(2)
+    },
+    balance() {
+      return this.balanceCent / 100
     },
     isMobile () {
       return (window.innerWidth <= 800 && window.innerHeight <= 600)
     }
   },
+  methods: {
+    confirmTransaction (paymentId) {
+      axios.post('api/exchange/complete', {
+        payment_id: paymentId,
+        counterparty: 'IBAN123'
+      }).then(response => console.log(response.data))
+      axios.get('api/exchange/payment', {
+        params: {
+          payment_id: paymentId
+        }
+      })
+    },
+    exchangeE2T () {
+      let amount = this.exchangeAmountE2T
+      axios.post('api/exchange/e2t', {
+        collatoral_cent: amount,
+        dest_wallet: 'ABC123'
+      }).then(response => console.log(response.data.token))
+    },
+    exchangeT2E () {
+      let amount = this.exchangeAmountT2E
+      axios.post('api/exchange/t2e', {
+        token_amount_cent: amount,
+        destination_iban: 'IBAN123'
+      }).then(response => console.log(response.data.token))
+    },
+    onlyForCurrencyE2T ($event) {
+      // console.log($event.keyCode); //keyCodes value
+      let keyCode = ($event.keyCode ? $event.keyCode : $event.which)
+
+      // only allow number and one dot
+      if ((keyCode < 48 || keyCode > 57) && (keyCode !== 46 || this.exchangeAmountE2T.indexOf('.') !== -1)) { // 46 is dot
+        $event.preventDefault()
+      }
+
+      // restrict to 2 decimal places
+      if (this.exchangeAmountE2T != null && this.exchangeAmountE2T.indexOf('.') > -1 && (this.exchangeAmountE2T.split('.')[1].length > 1)) {
+        $event.preventDefault()
+      }
+    },
+    onlyForCurrencyT2E ($event) {
+      // console.log($event.keyCode); //keyCodes value
+      let keyCode = ($event.keyCode ? $event.keyCode : $event.which)
+
+      // only allow number and one dot
+      if ((keyCode < 48 || keyCode > 57) && (keyCode !== 46 || this.exchangeAmountT2E.indexOf('.') !== -1)) { // 46 is dot
+        $event.preventDefault()
+      }
+
+      // restrict to 2 decimal places
+      if (this.exchangeAmountT2E != null && this.exchangeAmountT2E.indexOf('.') > -1 && (this.exchangeAmountT2E.split('.')[1].length > 1)) {
+        $event.preventDefault()
+      }
+    }
+  },
   mounted () {
-    axios.get('/api/exchange/e2t/rate').then(response =>
-      console.log(response.data))
+    axios.get('/api/exchange/e2t/rate')
+      .then(response => { this.rateE2Tcent = response.data.token })
+    axios.get('/api/exchange/t2e/rate')
+      .then(response => { this.rateT2Ecent = response.data.eur })
+    axios.get('/api/transactions/balance', {
+      params: {
+        wallet: 'ABC123'
+      }
+    }).then(response => { this.balanceCent = response.data.balance })
+    axios.get('/api/transactions/wallet', {
+      params: {
+        wallet: 'ABC123'
+      }
+    }).then(response => { this.transactions = response.data })
     this.$nextTick(() => {
       var ctx = document.getElementById('trafficBar').getContext('2d')
       var config = {
         type: 'line',
-        data: {
-          labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-          datasets: [{
-            label: 'CoPilot',
-            fill: false,
-            borderColor: '#284184',
-            pointBackgroundColor: '#284184',
-            backgroundColor: 'rgba(0, 0, 0, 0)',
-            data: this.coPilotNumbers
-          }, {
-            label: 'Personal Site',
-            borderColor: '#4BC0C0',
-            pointBackgroundColor: '#4BC0C0',
-            backgroundColor: 'rgba(0, 0, 0, 0)',
-            data: this.personalNumbers
-          }]
-        },
         options: {
           responsive: true,
           maintainAspectRatio: !this.isMobile,
