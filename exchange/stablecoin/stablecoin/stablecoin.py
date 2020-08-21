@@ -91,8 +91,7 @@ class StablecoinInteractor(StableCoin):
         return math.floor(token_amount_cent * 0.99)
 
     "Creation"
-    def initiate_creation(self, collatoral_amount_cent, destination_wallet):
-
+    def initiate_creation(self, collatoral_amount_cent, destination_wallet, temp_counterparty=None):
         payout_amount=self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
 
         payment_data = Transaction(
@@ -106,7 +105,8 @@ class StablecoinInteractor(StableCoin):
 
         payment_data.start_payment(
                 payment_provider_id=bank_transaction_id,
-                expected_payment_account=None
+                expected_payment_account=None,
+                temp_counterparty=temp_counterparty
                 )
 
         self.persistence.create_transaction(payment_data)
@@ -122,7 +122,7 @@ class StablecoinInteractor(StableCoin):
         return transaction
 
     "Destruction"
-    def initiate_destruction(self, token_amount_cent, destination_iban):
+    def initiate_destruction(self, token_amount_cent, destination_iban, temp_counterparty=None):
 
         payout_amount = self.get_exchange_rate_tok_to_col(token_amount_cent)
 
@@ -137,7 +137,8 @@ class StablecoinInteractor(StableCoin):
 
         payment_data.start_payment(
                 payment_provider_id=chain_transaction_id,
-                expected_payment_account=None
+                expected_payment_account=None,
+                temp_counterparty=temp_counterparty
                 )
 
         self.persistence.create_transaction(payment_data)

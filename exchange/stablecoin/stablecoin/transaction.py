@@ -54,9 +54,10 @@ class Transaction:
 
         self.data["payment_id"]             = self.generate_payment_id(self.data)
 
-    def start_payment(self, payment_provider_id, expected_payment_account):
+    def start_payment(self, payment_provider_id, expected_payment_account, temp_counterparty=None):
         self.data["payment_provider_id"] = payment_provider_id
         self.data["expected_payment_account"] = expected_payment_account
+        self.data["counterparty_account"] = temp_counterparty
 
         self.data["started_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
 

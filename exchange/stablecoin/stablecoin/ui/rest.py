@@ -73,10 +73,11 @@ class REST(UI):
     async def exchange_euro_to_token(self, request):
         data = dict(await request.json())
 
-        collatoral_cent = self.validate_euro_to_token_request_collatoral(data)
-        dest_wallet     = self.validate_euro_to_token_destination_address(data)
+        collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
+        dest_wallet       = self.validate_euro_to_token_destination_address(data)
+        temp_counterparty = data.get("counterparty", None)
 
-        payment_data = self.start_creation(collatoral_cent, dest_wallet)
+        payment_data = self.start_creation(collatoral_cent, dest_wallet, temp_counterparty)
 
         return web.json_response(payment_data)
 
@@ -111,11 +112,12 @@ class REST(UI):
         else:
             return "Invalid Status"
 
-    def start_creation(self, collatoral_cent, dest_wallet):
+    def start_creation(self, collatoral_cent, dest_wallet, temp_counterparty=None):
         try:
             data = self.stablecoin_interactor.initiate_creation(
                     collatoral_amount_cent=collatoral_cent,
-                    destination_wallet=dest_wallet
+                    destination_wallet=dest_wallet,
+                    temp_counterparty=temp_counterparty
                     )
             data["status"] = self.clean_status(data["status"])
             return data
@@ -138,8 +140,9 @@ class REST(UI):
 
         token_amount_cent = self.validate_token_to_euro_token_amount(data)
         iban              = self.validate_token_to_euro_iban(data)
+        temp_counterparty = data.get("counterparty", None)
 
-        payment_data      = self.start_destruction(token_amount_cent, iban)
+        payment_data      = self.start_destruction(token_amount_cent, iban, temp_counterparty)
 
         return web.json_response(payment_data)
 
@@ -156,11 +159,12 @@ class REST(UI):
             raise web.HTTPBadRequest(reason="Missing 'destination_iban' field.")
         return request_data["destination_iban"]
 
-    def start_destruction(self, token_amount_cent, iban):
+    def start_destruction(self, token_amount_cent, iban, temp_counterparty=None):
         try:
             data =  self.stablecoin_interactor.initiate_destruction(
                     token_amount_cent=token_amount_cent,
-                    destination_iban=iban
+                    destination_iban=iban,
+                    temp_counterparty=temp_counterparty
                     )
             data["status"] = self.clean_status(data["status"])
             return data
