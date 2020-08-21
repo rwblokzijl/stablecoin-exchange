@@ -16,7 +16,7 @@
           <messages-menu></messages-menu>
           <notifications-menu></notifications-menu>
           <tasks-menu></tasks-menu>
-          <user-menu :account="account" :user="user"></user-menu>
+          <user-menu :account="account" :accounts="accounts" :user="user"></user-menu>
         </ul>
       </div>
     </nav>
@@ -38,7 +38,7 @@ export default {
     TasksMenu,
     UserMenu
   },
-  props: ['user', 'account'],
+  props: ['user', 'account', 'accounts'],
   computed: {
     ...mapState([
       'userInfo'

@@ -11,7 +11,7 @@
         </div>
         <div class="pull-left info">
           <div>
-            <p class="white">{{user.displayName}}</p>
+            <p class="white">{{account}}</p>
           </div>
           <!-- <a href="javascript:;"> -->
           <!--   <i class="fa fa-circle text-success"></i> Online -->
@@ -28,11 +28,22 @@
 </template>
 <script>
 import SidebarMenu from './SidebarMenu'
+const stores = require('../shared_state.js')
 
 export default {
   name: 'Sidebar',
   props: ['user'],
   components: { SidebarMenu },
+  data: function() {
+    return {
+      store: stores.store.state
+    }
+  },
+  computed: {
+    account() {
+      return this.store.account
+    }
+  },
   mounted: function() {
     window
       .jQuery('[data-toggle="hideseek"]')

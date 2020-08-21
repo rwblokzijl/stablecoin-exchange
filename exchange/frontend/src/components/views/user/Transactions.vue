@@ -235,7 +235,6 @@ export default {
         'oLanguage': {
           'sLengthMenu': 'Show _MENU_ transactions',
           'sInfo': 'Showing _START_ to _END_ of _TOTAL_ transactions'
-
         }
       })
     })

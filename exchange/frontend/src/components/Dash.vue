@@ -2,7 +2,7 @@
   <div :class="['wrapper', classes]">
 
     <!-- Horizontal bar at top. Contains messages, notifications, tasks and user menu -->
-    <dash-header :account="account" :user="user"></dash-header>
+    <dash-header :account="account" :accounts="accounts" @account-change="changeAccount" :user="user"></dash-header>
 
     <!-- Left side column. contains the logo and sidebar -->
     <sidebar :user="user" />
@@ -23,6 +23,7 @@
           <li class="active">{{$route.name.toUpperCase()}}</li>
         </ol>
       </section>
+      <!-- {{store.account}} -->
 
       <router-view></router-view>
     </div>
@@ -40,6 +41,7 @@ import DashFooter from './layout/DashFooter'
 import DashHeader from './layout/DashHeader'
 import Sidebar from './layout/Sidebar'
 import 'hideseek'
+// const store = require('./shared_state.js')
 
 export default {
   name: 'Dash',
@@ -51,12 +53,13 @@ export default {
   data: function () {
     return {
       // section: 'Dash',
+      // store: store.store.state,
       classes: {
         fixed_layout: config.fixedLayout,
         hide_logo: config.hideLogoOnMobile
       },
-      account: 'ABC',
-      accounts: ['ABC', 'DEF', 'GHI']
+      account: 'ABC1234',
+      accounts: ['ABC123', 'DEF456', 'GHI789', 'JKL012']
     }
   },
   computed: {
@@ -66,6 +69,12 @@ export default {
         avatar: faker.image.avatar(),
         roles: [faker.name.jobTitle(), faker.name.jobTitle()]
       }
+    }
+  },
+  methods: {
+    changeAccount(account) {
+      // this.account = account
+      this.console.log('sdfsdfs')
     }
   }
 }
