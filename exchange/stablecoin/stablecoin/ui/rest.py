@@ -66,7 +66,7 @@ class REST(UI):
 
         payment_data = self.stablecoin_interactor.transaction_status(payment_id)
 
-        payment_data["status"] = self.clean_status(payment_data["status"])
+        payment_data = self.clean_transaction_status(payment_data)
 
         return web.json_response(payment_data)
 
@@ -97,7 +97,8 @@ class REST(UI):
     def clean_transaction_status(self, transaction):
         t = copy(transaction)
         if "status" in t:
-            t["status"] = self.clean_status(t["status"])
+            t["status_text"] = self.clean_status(t["status"])
+            t["status"]      = t["status"].value
         return t
 
     def clean_status(self, status):
@@ -119,7 +120,7 @@ class REST(UI):
                     destination_wallet=dest_wallet,
                     temp_counterparty=temp_counterparty
                     )
-            data["status"] = self.clean_status(data["status"])
+            data = self.clean_transaction_status(data)
             return data
 
         except StablecoinInteractor.CommunicationError:
@@ -166,7 +167,7 @@ class REST(UI):
                     destination_iban=iban,
                     temp_counterparty=temp_counterparty
                     )
-            data["status"] = self.clean_status(data["status"])
+            data = self.clean_transaction_status(data)
             return data
         except StablecoinInteractor.CommunicationError:
             raise web.HTTPInternalServerError()

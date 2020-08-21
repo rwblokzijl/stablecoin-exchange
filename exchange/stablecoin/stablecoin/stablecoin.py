@@ -123,7 +123,6 @@ class StablecoinInteractor(StableCoin):
 
     "Destruction"
     def initiate_destruction(self, token_amount_cent, destination_iban, temp_counterparty=None):
-
         payout_amount = self.get_exchange_rate_tok_to_col(token_amount_cent)
 
         payment_data = Transaction(

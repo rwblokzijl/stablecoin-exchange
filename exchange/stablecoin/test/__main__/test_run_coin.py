@@ -1,8 +1,9 @@
 from stablecoin.stablecoin import StablecoinInteractor
-from stablecoin.ui.rest               import REST
-from run_coin import buildSI
+from stablecoin.ui.rest    import REST
+from run_coin              import buildSI
 
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from stablecoin.transaction import Transaction
 
 import unittest
 from unittest.mock import Mock
@@ -149,7 +150,7 @@ class V1AcceptanceTests(AioHTTPTestCase):
         data2 = await self.get_status(data1["payment_id"])
         self.assertEqual(
                 data2["status"],
-                "Waiting for payment"
+                Transaction.Status.PAYMENT_PENDING.value
                 )
 
         #balance
@@ -166,7 +167,8 @@ class V1AcceptanceTests(AioHTTPTestCase):
         data4 = await self.get_status(data1["payment_id"])
         self.assertEqual(
                 data4["status"],
-                "Payout Done")
+                Transaction.Status.PAYOUT_DONE.value
+                )
 
         #balance
         data3 = await self.get_balance(wallet)
@@ -191,7 +193,7 @@ class V1AcceptanceTests(AioHTTPTestCase):
         data2 = await self.get_status(data1["payment_id"])
         self.assertEqual(
                 data2["status"],
-                "Waiting for payment"
+                Transaction.Status.PAYMENT_PENDING.value
                 )
 
         #balance
@@ -208,7 +210,8 @@ class V1AcceptanceTests(AioHTTPTestCase):
         data4 = await self.get_status(data1["payment_id"])
         self.assertEqual(
                 data4["status"],
-                "Payout Done")
+                Transaction.Status.PAYOUT_DONE.value
+                )
 
         #balance
         data5 = await self.get_balance(wallet)
@@ -264,7 +267,7 @@ class V1AcceptanceTests(AioHTTPTestCase):
         data2 = await self.get_status(data1["payment_id"])
         self.assertEqual(
                 data2["status"],
-                "Waiting for payment"
+                Transaction.Status.PAYMENT_PENDING.value
                 )
 
         #balance
@@ -289,7 +292,8 @@ class V1AcceptanceTests(AioHTTPTestCase):
         data4 = await self.get_status(data1["payment_id"])
         self.assertEqual(
                 data4["status"],
-                "Payout Done")
+                Transaction.Status.PAYOUT_DONE.value
+                )
 
         #balance
         data5 = await self.get_balance(wallet)
