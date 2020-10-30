@@ -4,7 +4,6 @@ from datetime import datetime
 
 
 class ChainStub(PaymentSystem):
-
     def __init__(self, *args, **kwargs):
         self.register_with_identity(*args, **kwargs)
         self.last_id = 0

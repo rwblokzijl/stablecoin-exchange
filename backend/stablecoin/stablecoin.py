@@ -44,6 +44,7 @@ class StableCoin(ABC):
 
 class StablecoinInteractor(StableCoin):
 
+    "Entry point for all outgoing payments"
     def complete_payment(self, payment_id, counterparty):
         transaction = self.persistence.get_payment_by_id(payment_id)
 
@@ -54,7 +55,9 @@ class StablecoinInteractor(StableCoin):
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
             return True
 
-        ans = self.provider_map[transaction["payment_provider"]].payment_done_trigger(transaction["payment_provider_id"], counterparty)
+        payment_provider = self.provider_map[transaction["payment_provider"]]
+
+        ans = payment_provider.payment_done_trigger(transaction["payment_provider_id"], counterparty)
         if ans:
             transaction.confirm_payment(counterparty)
             self.persistence.update_transaction(transaction)

@@ -34,6 +34,7 @@ class REST(UI):
             web.post( '/exchange/complete', self.complete_payment), #tested
         ])
 
+    " Test functions "
     async def complete_payment(self, request):
         data = dict(await request.json())
         # print(data["payment_id"])
@@ -48,6 +49,7 @@ class REST(UI):
             raise web.HTTPBadRequest(reason="Coundn't complete the transaction")
 
     "Exchange E->T"
+    # Get exchange rate
     async def exchange_rate_euro_to_token(self, request):
         base = request.query.get("base", 100)
         try:
@@ -57,6 +59,19 @@ class REST(UI):
         ans  = self.stablecoin_interactor.get_exchange_rate_col_to_tok(base)
         return web.json_response({"eur": base, "token": ans})
 
+    # Start Creation transaction
+    async def exchange_euro_to_token(self, request):
+        data = dict(await request.json())
+
+        collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
+        dest_wallet       = self.validate_euro_to_token_destination_address(data)
+        temp_counterparty = data.get("counterparty", None)
+
+        payment_data = self.start_creation(collatoral_cent, dest_wallet, temp_counterparty)
+
+        return web.json_response(payment_data)
+
+    # Get info on existing transaction
     async def exchange_status(self, request):
         # payment_id = request.match_info.get('payment_id')#.encode("ascii")
         if "payment_id" not in request.query:
@@ -70,17 +85,7 @@ class REST(UI):
 
         return web.json_response(payment_data)
 
-    async def exchange_euro_to_token(self, request):
-        data = dict(await request.json())
-
-        collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
-        dest_wallet       = self.validate_euro_to_token_destination_address(data)
-        temp_counterparty = data.get("counterparty", None)
-
-        payment_data = self.start_creation(collatoral_cent, dest_wallet, temp_counterparty)
-
-        return web.json_response(payment_data)
-
+    # Helpers
     def validate_euro_to_token_request_collatoral(self, request_data):
         if not "collatoral_cent" in request_data:
             raise web.HTTPBadRequest(reason="Missing 'collatoral_cent' field.")
@@ -127,6 +132,7 @@ class REST(UI):
             raise web.HTTPInternalServerError()
 
     "Exchange T->E"
+    # Get exchange rate
     async def exchange_rate_token_to_euro(self, request):
         base = request.query.get("base", 100)
         try:
@@ -136,6 +142,7 @@ class REST(UI):
         ans  = self.stablecoin_interactor.get_exchange_rate_tok_to_col(base)
         return web.json_response({"token": base, "eur": ans})
 
+    # Start Destruction transaction
     async def exchange_token_to_euro(self, request):
         data = dict(await request.json())
 
@@ -147,6 +154,7 @@ class REST(UI):
 
         return web.json_response(payment_data)
 
+    # Helpers
     def validate_token_to_euro_token_amount(self, request_data):
         if not "token_amount_cent" in request_data:
             raise web.HTTPBadRequest(reason="Missing 'token_amount_cent' field.")
