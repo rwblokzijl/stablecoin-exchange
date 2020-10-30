@@ -16,13 +16,12 @@ create a fabric that the financial infrastructure of tomorrow can build on.
 
 # System components
 
-This prototype consists of 3 components that demonstrate the systems
+This prototype consists of 2 components that demonstrate the systems
 capabilities.
 
-**The Wallet** is used by anyone willing to hold and transact the stablecoin.
+[**The Wallet**](https://github.com/Bloodyfool/trustchain-superapp) is used by
+anyone willing to hold and transact the stablecoin.
 
-**The Exchange platform** is controlled by a (central bank like) issuer. It
+**The Exchange platform (this repo)** is controlled by a (central bank like) issuer. It
 exchanges collateral (like Euros) for the Stablecoin.
 
-**Inspection and verification software** is a suite of tools that allows
-notaries and regulators to inspect certain behaviour from data on the chain.
