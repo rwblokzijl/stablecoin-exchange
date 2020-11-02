@@ -5,25 +5,25 @@ from stablecoin.blockchain.ipv8 import TrustChainCommunity
 
 class TrustChain(PaymentSystem):
 
-    class Status(Enum):
-        PAYMENT_PENDING = 1
-        PAYMENT_DONE = 2
-
     @dataclass(unsafe_hash=True)
     class TrustChainPaymentRequest:
+        class Status(Enum):
+            PAYMENT_PENDING = 1
+            PAYMENT_DONE = 2
+
         id: str
         amount: int
         timestamp: int
-        status: int = self.Status.PAYMENT_PENDING
         wallet: str
+        status: int = Status.PAYMENT_PENDING
         counterparty: str = None
         blockhash: str = None
 
-    def __init__(self):
+    def __init__(self, identity, ipv8):
+        ipv8 = ipv8
+        self.register_with_identity(identity)
         self.payment_request_map = {}
         self.payout_log = {}
-
-        self.register_with_identity(*args, **kwargs)
         self.last_id = 0
 
     def __str__(self):

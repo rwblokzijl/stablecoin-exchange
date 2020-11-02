@@ -1,10 +1,12 @@
 from ipv8.attestation.trustchain.block import TrustChainBlock, ValidationResult
 from ipv8.attestation.trustchain.listener import BlockListener
-from ipv8.attestation.trustchain.community import TrustChainCommunity as BaseTrustChainCommunity
+from ipv8.attestation.trustchain.community import TrustChainCommunity
 from ipv8.keyvault.crypto import ECCrypto
 from ipv8.peer import Peer
 
 from binascii import hexlify, unhexlify
+
+INITIAL_BALANCE = 100
 
 class MyTrustChainBlock(TrustChainBlock):
 
@@ -25,8 +27,8 @@ class MyTrustChainBlock(TrustChainBlock):
         def get_block_balance(self, database):
             if self.transaction['sender'] == self.public_key:
                 return self.transaction['balance']
-        else:
-            return self.get_sender_balance_from_chain_before_block(database) + self.transaction['amount']
+            else:
+                return self.get_sender_balance_from_chain_before_block(database) + self.transaction['amount']
 
     def get_sender_balance_from_chain_before_block(self, database):
 
@@ -37,22 +39,22 @@ class MyTrustChainBlock(TrustChainBlock):
         sender = self.transaction['sender']
 
         # self is first
-        if self.sequence_number is 1:
+        if self.sequence_number == 1:
             return INITIAL_BALANCE
 
         #add up all balances until last verified balance
         known_balance = 0
         check_block = database.get_block_before(self)
         while (check_block is not None and
-                check_block.sequence_number is not 1 and
-                check_block.transaction['receiver'] is not sender):
+                check_block.sequence_number != 1 and
+                check_block.transaction['receiver'] != sender):
             # sender revieved money this block
-            if check_block.type is b'test': #ignore wrong blocks
+            if check_block.type == b'test': #ignore wrong blocks
                 known_balance += check_block.transaction['amount']
             check_block = database.get_block_before(check_block)
         if check_block is None:
             return None
-        if check_block.sequence_number is 1:
+        if check_block.sequence_number == 1:
             # We are at the genesis block
             known_balance += INITIAL_BALANCE
         else:
@@ -109,7 +111,7 @@ class MyBlockListener(BlockListener):
     def received_block(self, block):
         pass
 
-class TrustChainCommunity(BaseTrustChainCommunity):
+class MyTrustChainCommunity(TrustChainCommunity):
 
     # master_peer = Peer(ECCrypto().generate_key(u"curve25519"))
 

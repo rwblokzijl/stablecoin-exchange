@@ -7,14 +7,34 @@ from aiohttp import web
 from abc import ABC
 from copy import copy
 
-class Request(ABC):
-    pass
+from ipv8.attestation.trustchain.block import TrustChainBlock, ValidationResult
+from ipv8.attestation.trustchain.listener import BlockListener
+from ipv8.REST.rest_manager import RESTManager, cors_middleware
+from ipv8.keyvault.crypto import ECCrypto
+from ipv8.peer import Peer
 
-class REST(UI):
+from aiohttp import web
+from aiohttp_apispec import setup_aiohttp_apispec
 
-    def __init__(self, stablecoin_interactor, test_config=None):
-        self.stablecoin_interactor = stablecoin_interactor
-        self.app = web.Application()
+from ipv8.REST.base_endpoint import BaseEndpoint, Response
+
+from binascii import hexlify, unhexlify
+
+INITIAL_BALANCE = 100
+
+
+class APIEndpoint(BaseEndpoint):
+
+    def __init__(self):
+        super(APIEndpoint, self).__init__()
+        self.trustchain = None
+
+    def initialize(self, session):
+        super(APIEndpoint, self).initialize(session)#.blockchain.ipv8)
+        self.stablecoin_interactor = session
+        # self.trustchain = session.get_overlay(MyTrustChainCommunity)
+
+    def setup_routes(self):
         self.app.add_routes([
 
             #"actual exchange (creation/destruction)"
@@ -208,8 +228,49 @@ class REST(UI):
             "balance":balance
             })
 
-    def start(self):
-        web.run_app(self.app, port=8000)
+    # def start(self):
+    #     web.run_app(self.app, port=8000)
+
+class RootEndpoint(BaseEndpoint):
+    """
+    The root endpoint of the HTTP API is the root resource in the request tree.
+    It will dispatch requests regarding torrents, channels, settings etc to the right child endpoint.
+    """
+
+    def setup_routes(self):
+        endpoints = {'/api': APIEndpoint,
+                # '/gui': GUIEndpoint,
+                }
+        for path, ep_cls in endpoints.items():
+            self.add_endpoint(path, ep_cls())
+
+class MyRESTManager(RESTManager):
 
     def __str__(self) -> str:
         return "rest"
+
+    async def start(self, port=8085):
+        """
+        Starts the HTTP API with the listen port as specified in the session configuration.
+        """
+
+        root_endpoint = RootEndpoint(middlewares=[cors_middleware])
+        root_endpoint.initialize(self.session)
+        setup_aiohttp_apispec(
+                app=root_endpoint.app,
+                title="IPv8 REST API documentation",
+                version="v1.9",
+                url="/docs/swagger.json",
+                swagger_path="/docs",
+                )
+
+        from apispec.core import VALID_METHODS_OPENAPI_V2
+        if 'head' in VALID_METHODS_OPENAPI_V2:
+            VALID_METHODS_OPENAPI_V2.remove('head')
+
+        runner = web.AppRunner(root_endpoint.app, access_log=None)
+        await runner.setup()
+        # If localhost is used as hostname, it will randomly either use 127.0.0.1 or ::1
+        self.site = web.TCPSite(runner, '127.0.0.1', port)
+        await self.site.start()
+
