@@ -8,8 +8,8 @@ module.exports = merge(prodEnv, {
   // }
   proxyTable: {
     "/api": {
-      target: "http://localhost:8000",
-      pathRewrite: { "/api": "" },
+      target: "http://localhost:8001/api",
+      // pathRewrite: { "/api": "" },
       changeOrigin: true,
       logLevel: "debug"
     }

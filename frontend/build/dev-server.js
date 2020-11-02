@@ -59,7 +59,7 @@ compiler.plugin('compilation', function (compilation) {
 app.use('/api', proxyMiddleware({
   target: 'http://localhost:8000',
   changeOrigin: true,
-  pathRewrite: { "/api": "" },
+  // pathRewrite: { "/api": "" },
 }));
   // app.use(proxyMiddleware(options.filter || context, options))
 // })
