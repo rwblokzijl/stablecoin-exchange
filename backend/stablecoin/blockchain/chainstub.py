@@ -95,6 +95,7 @@ class ChainStub(PaymentSystem):
             self.ledger[wallet] = 0
         return self.ledger[wallet]
 
+    #Test only??
     def payment_done_trigger(self, transaction_id, counterparty):
         if transaction_id in self.transactions:
             "STUB WAY TO SUCCEED TRANSACTION"

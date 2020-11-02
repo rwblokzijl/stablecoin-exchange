@@ -64,7 +64,6 @@ class Transaction:
         self.data["status"] = self.Status.PAYMENT_PENDING
 
     def confirm_payment(self, counterparty_account):
-
         self.data["counterparty_account"] = counterparty_account
 
         self.data["payment_confirmed_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
