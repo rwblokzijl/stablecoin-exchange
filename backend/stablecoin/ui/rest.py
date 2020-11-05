@@ -37,22 +37,103 @@ class APIEndpoint(BaseEndpoint):
     def setup_routes(self):
         self.app.add_routes([
 
-            #"actual exchange (creation/destruction)"
-            web.post( '/exchange/e2t',         self.exchange_euro_to_token), #tested
-            web.post( '/exchange/t2e',         self.exchange_token_to_euro), #tested
+            #"Creation"
+            # Step 1 -> returns info to connect to gateway over ipv8
+            web.post( '/exchange/e2t/initiate',         self.REST_CREATE_initiate),
+            # Step 2 -> user connects through ipv8 to register its node and address
+            # Step 3 -> returns the payment link to the user
+            web.post( '/exchange/e2t/start_payment',    self.REST_CREATE_start_payment),
+            # Step 4 -> triggers_payout
+            web.post( '/exchange/e2t/finish_payment',   self.REST_CREATE_finish_payment),
+
+            #"Destruction"
+            # Step 1 -> returns: wallet_address and payment id to send money to with trustchain ipv8
+            web.post( '/exchange/t2e',         self.REST_DESTROY_initiate),
+            # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
+
+            #"Other"
             #"exchange rates"
-            web.get(  '/exchange/e2t/rate',    self.exchange_rate_euro_to_token), #tested
-            web.get(  '/exchange/t2e/rate',    self.exchange_rate_token_to_euro), #tested
+            web.get(  '/exchange/e2t/rate',    self.exchange_rate_euro_to_token),
+            web.get(  '/exchange/t2e/rate',    self.exchange_rate_token_to_euro),
             #"get payment status"
-            web.get(  '/exchange/payment',     self.exchange_status), #tested
+            web.get(  '/exchange/payment',     self.exchange_status),
+
+            # "Old"
+            #"actual exchange (creation/destruction)"
+            web.post( '/exchange/e2t',         self.exchange_euro_to_token),
+            web.post( '/exchange/t2e',         self.exchange_token_to_euro),
+
+            #"FOR TESTING"
             #"get transactions for wallet/iban"
             web.get(  '/transactions/iban',    self.get_iban_transactions),
             web.get(  '/transactions/wallet',  self.get_wallet_transactions),
-            web.get(  '/transactions/balance', self.get_wallet_balance), #tested
+            web.get(  '/transactions/balance', self.get_wallet_balance),
 
-            #"FOR TESTING"
             web.post( '/exchange/complete', self.complete_payment), #tested
         ])
+
+    "Creation"
+    # Step 1 -> returns info to connect to gateway over ipv8
+    async def REST_CREATE_initiate(self, request):
+        data = dict(await request.json())
+
+        collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
+
+        transaction = self.stablecoin_interactor.CREATE_initiate(collatoral_cent)
+
+        return web.json_response({
+            "payment_id" : transaction['payment_id'],
+            "connection_info" : transaction['connection_info']
+            })
+
+    # Step 2 -> user connects through ipv8 to register its node and address
+    # Over trustchain
+
+    # Step 3 -> returns the payment link to the user
+    async def REST_CREATE_start_payment(self, request):
+
+        if "payment_id" not in request.query:
+            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
+        payment_id = request.query["payment_id"]
+
+        transaction = self.stablecoin_interactor.CREATE_start_payment(payment_id)
+
+        return web.json_response({
+            "payment_id" : transaction['payment_id'],
+            "payment_link" : transaction['payment_transaction_data']
+            })
+
+    # Step 4 -> triggers_payout
+    async def REST_CREATE_finish_payment(self, request):
+        if "payment_id" not in request.query:
+            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
+        payment_id = request.query["payment_id"]
+
+        transaction = self.stablecoin_interactor.CREATE_start_payment(payment_id)
+
+        return web.json_response({
+            "payment_id" : transaction['payment_id'],
+            "payout_id" : transaction['payout_transaction_id']
+            })
+
+    "Destruction"
+    # Step 1 -> returns: wallet_address and payment id to send money to with trustchain ipv8
+    async def REST_DESTROY_initiate(self, request):
+        data = dict(await request.json())
+
+        amount  = self.validate_token_to_euro_token_amount(data)
+        iban    = self.validate_token_to_euro_iban(data)
+
+        transaction = self.stablecoin_interactor.DESTROY_initiate(amount, iban)
+
+        return web.json_response({
+            "payment_id" : transaction['payment_id'],
+            "payment_data" : transaction['payment_transaction_data']
+            })
+
+    # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
+    # Over trustchain
+
 
     " Test functions "
     async def complete_payment(self, request):
@@ -100,6 +181,8 @@ class APIEndpoint(BaseEndpoint):
         payment_id = request.query["payment_id"]
 
         payment_data = self.stablecoin_interactor.transaction_status(payment_id)
+
+        print(payment_data)
 
         payment_data = self.clean_transaction_status(payment_data)
 

@@ -1,7 +1,10 @@
 from stablecoin.bank.payment_system import PaymentSystem
-from dataclasses import dataclass
-from enum     import Enum
-from stablecoin.blockchain.ipv8 import TrustChainCommunity
+from dataclasses                    import dataclass
+from enum                           import Enum
+from stablecoin.blockchain.ipv8     import MyTrustChainCommunity
+from datetime                       import datetime
+
+from binascii import hexlify, unhexlify
 
 class TrustChain(PaymentSystem):
 
@@ -19,27 +22,24 @@ class TrustChain(PaymentSystem):
         counterparty: str = None
         blockhash: str = None
 
-    def __init__(self, identity, ipv8):
-        ipv8 = ipv8
-        self.register_with_identity(identity)
+    def __init__(self, identity, ipv8, address=("127.0.0.1", 8090)):
+        self.trustchain = ipv8.get_overlay(MyTrustChainCommunity)
+        self.identity = hexlify(self.trustchain.my_peer.public_key.key_to_bin())
+        self.address = address
         self.payment_request_map = {}
         self.payout_log = {}
         self.last_id = 0
 
-    def __str__(self):
-        return "trustchain"
+    def get_connection_info(self):
+        return {
+                'public_key' : self.identity,
+                'ip' : self.address[0],
+                'port' : self.address[1]
+                }
 
-    def get_new_id(self):
-        self.last_id += 1
-        return self.last_id
+    "OLD"
 
-    def register_with_identity(self, identity):
-        self.identity = identity
-
-    def get_identity(self, *args, **kwargs):
-        return self.identity
-
-    "Payment end"
+    "Payment side"
 
     "Step 0: Creation"
     #TODO
@@ -67,25 +67,34 @@ class TrustChain(PaymentSystem):
         "Returns status of transaction???, will include payee when payment successful"
         return self.payment_request_map[identifier].status
 
-    "Payout End"
+    "Payout side"
 
     "Step 2: Start the payout"
     #TODO
     def initiate_payment(self, account, amount):
         "Returns transaction_id if successful"
+
+        public_key = account["pubkey"]
+        ip = account["ip"]
+        port = account["port"]
+
         now = datetime.now()
 
         transaction_id = self.get_new_id()
 
-        self.transactions[transaction_id] = {
-                "type": "chain",
-                "amount": amount,
-                "timestamp": now,
-                "status": "payout",
-                "wallet": self.identity,
-                "counterparty": account
-                }
-        self.update_balance(account, amount)
+        # self.transactions[transaction_id] = {
+        #         "type": "chain",
+        #         "amount": amount,
+        #         "timestamp": now,
+        #         "status": "payout",
+        #         "wallet": self.identity,
+        #         "counterparty": account
+        #         }
+
+        # self.update_balance(account, amount)
+
+        self.trustchain.send_test()
+
         return transaction_id
 
     "Bookkeeping functions"
@@ -103,20 +112,13 @@ class TrustChain(PaymentSystem):
     def get_identity(self):
         return self.identity
 
-    def get_available_balance(self):
-        pass
+    def get_balance(self, wallet):
+        return 1337
 
-    def create_payment_request(self):
-        pass
+    def __str__(self):
+        return "trustchain"
 
-    def initiate_payment(self):
-        pass
+    def get_new_id(self):
+        self.last_id += 1
+        return self.last_id
 
-    def list_transactions(self):
-        return list()
-
-    def payment_request_status(self, payment_id):
-        pass
-
-    def register_with_identity(self, identity):
-        self.identity = identity

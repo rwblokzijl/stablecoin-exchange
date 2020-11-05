@@ -23,8 +23,10 @@ from base64 import b64encode
 
 async def start_communities():
     print("starting")
-    port = 8000
+    rest_port = 8000
     configuration = get_default_configuration()
+    configuration['address'] = '127.0.0.1' # TODO
+    configuration['port'] = 8090 # TODO
     configuration['keys'] = [{
         'alias': "my peer",
         'generation': u"curve25519",
@@ -54,7 +56,7 @@ async def start_communities():
     await ipv8.start()
     interactor = buildSI(ipv8)
     rest_manager = MyRESTManager(interactor)
-    await rest_manager.start(port)
+    await rest_manager.start(rest_port)
 
 def buildSI(ipv8):
     bank        = BankStub()

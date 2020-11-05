@@ -49,7 +49,7 @@ class MyTrustChainBlock(TrustChainBlock):
                 check_block.sequence_number != 1 and
                 check_block.transaction['receiver'] != sender):
             # sender revieved money this block
-            if check_block.type == b'test': #ignore wrong blocks
+            if check_block.type == b'transfer': #ignore wrong blocks
                 known_balance += check_block.transaction['amount']
             check_block = database.get_block_before(check_block)
         if check_block is None:
@@ -105,7 +105,7 @@ class MyBlockListener(BlockListener):
 
     def should_sign(self, block):
         self.community.balance += block.transaction["amount"]
-        print(self.my_peer, self.community.balance)
+        # print(self.my_peer, self.community.balance)
         return True
 
     def received_block(self, block):
@@ -117,27 +117,30 @@ class MyTrustChainCommunity(TrustChainCommunity):
 
     def __init__(self, *args, **kwargs):
         super(MyTrustChainCommunity, self).__init__(*args, **kwargs)
-        self.add_listener(MyBlockListener(self.my_peer, self), [b'test'])
+        self.add_listener(MyBlockListener(self.my_peer, self), [b'transfer'])
         self.balance = INITIAL_BALANCE
 
     def started(self):
+        # pass
         async def start_communication():
-            for peer in self.get_peers():
-                self.send_transaction(peer, 5)
-        self.register_task("start_communication", start_communication, interval=5.0, delay=0)
+            peers = self.get_peers()
+            print("N. peers: " + str(len(peers)))
+            for peer in peers:
+                print(peer)
+                # self.send_transaction(peer, 5)
+        # self.register_task("start_communication", start_communication, interval=5.0, delay=0)
 
-    def send_transaction(self, peer, amount):
-        blk = self.persistence.get_latest(self.my_peer.public_key.key_to_bin(), block_type=b'test')
-        # if blk is None:
-        #     balance = INITIAL_BALANCE
-        # else:
-        #     balance = blk.get_block_balance(self.persistence)
-        self.balance -= amount
-        self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=b'test', transaction={
-            'sender': hexlify(self.my_peer.public_key.key_to_bin()),
-            'receiver': hexlify(peer.public_key.key_to_bin()),
-            'amount': amount,
-            'balance': self.balance
+    def send_test(self):
+        peer_key = unhexlify("4c69624e61434c504b3a88e521769ebc0cf3ac7196317c3c52bc1a4f9043cff11ca7b3a95ac9e17fd937bfbd3ec432695f87f89303af415863d6b644fe3c58b9a56674ece6e1dfab1b68")
+        print(self.master_peer)
+        print(self.get_peers())
+        # self.send_transaction_to_peer(peer, 100)
+
+    def send_transaction_to_peer(self, peer, amount):
+        self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=b'transfer', transaction={
+            'amount': amount
             })
+
+
 
 
