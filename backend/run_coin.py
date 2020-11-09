@@ -9,7 +9,7 @@ from stablecoin.blockchain.trustchain import TrustChain
 from stablecoin.bank.bankstub                   import BankStub
 from stablecoin.blockchain.chainstub            import ChainStub
 from stablecoin.persistence.inmemorypersistence import InMemoryPersistence
-from stablecoin.blockchain.ipv8                 import MyTrustChainCommunity
+from stablecoin.blockchain.ipv8                 import MyTrustChainCommunity, EuroTokenCommunity
 
 from stablecoin.ui.rest import MyRESTManager
 
@@ -21,12 +21,17 @@ from ipv8_service import IPv8
 from binascii import hexlify, unhexlify
 from base64 import b64encode
 
-async def start_communities():
+async def start_communities(args):
     print("starting")
     rest_port = 8000
+    ipv8_port = 8090
+    if args:
+        address = args[0]
+    else:
+        address = '127.0.0.1'
     configuration = get_default_configuration()
-    configuration['address'] = '127.0.0.1' # TODO
-    configuration['port'] = 8090 # TODO
+    configuration['address'] = address
+    configuration['port'] = ipv8_port
     configuration['keys'] = [{
         'alias': "my peer",
         'generation': u"curve25519",
@@ -34,7 +39,6 @@ async def start_communities():
         }]
     configuration['logger'] = {
             'level': "WARNING",
-            # 'level': "INFO",
             }
     configuration['overlays'] = [{
         'class': 'MyTrustChainCommunity',
@@ -50,17 +54,30 @@ async def start_communities():
             'working_directory':f'.local'
             },
         'on_start': [('started', )]
-        }]
+        }, {
+        'class': 'EuroTokenCommunity',
+        'key': "my peer",
+        'walkers': [{
+            'strategy': "RandomWalk",
+            'peers': 10,
+            'init': {
+                'timeout': 3.0
+                }
+            }],
+        'initialize': {},
+        'on_start': [('started', )]
+        }
+        ]
 
-    ipv8 = IPv8(configuration, extra_communities={'MyTrustChainCommunity': MyTrustChainCommunity})
+    ipv8 = IPv8(configuration, extra_communities={'MyTrustChainCommunity': MyTrustChainCommunity, 'EuroTokenCommunity': EuroTokenCommunity})
     await ipv8.start()
-    interactor = buildSI(ipv8)
+    interactor = buildSI(ipv8, address, ipv8_port)
     rest_manager = MyRESTManager(interactor)
     await rest_manager.start(rest_port)
 
-def buildSI(ipv8):
+def buildSI(ipv8, address, ipv8_port):
     bank        = BankStub()
-    blockchain  = TrustChain("pubkey0123456789abcdef", ipv8)
+    blockchain  = TrustChain(identity="pubkey0123456789abcdef", ipv8=ipv8, address=(address, ipv8_port) )
     persistence = InMemoryPersistence()
 
     s = StablecoinInteractor(
@@ -85,7 +102,7 @@ if __name__ == '__main__':
     import sys
     # main(sys.argv[1:])
 
-    ensure_future(start_communities())
+    ensure_future(start_communities(sys.argv[1:]))
     get_event_loop().run_forever()
 
 

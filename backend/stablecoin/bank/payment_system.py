@@ -2,6 +2,10 @@ from abc import ABC, abstractmethod
 
 class PaymentSystem(ABC):
 
+    "Set the stablecoin instance"
+    def set_callback_instance(self, stablecoin_instance):
+        self.stablecoin = stablecoin_instance
+
     "Helpers"
     @abstractmethod
     def __str__(self):

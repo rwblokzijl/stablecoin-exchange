@@ -12,6 +12,9 @@
         section: 'Head'
       }
     },
+    created () {
+      this.$cookies.config('1y')
+    },
     methods: {
       logout () {
         this.$store.commit('SET_USER', null)

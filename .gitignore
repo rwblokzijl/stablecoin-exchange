@@ -1,3 +1,14 @@
 __pycache__/
 .vim/
 backend/.local
+frontend/.DS_Store
+frontend/node_modules
+frontend/dist/
+frontend/npm-debug.log
+frontend/yarn-error.log
+frontend/test/unit/coverage
+frontend/test/e2e/reports
+frontend/selenium-debug.log
+frontend/.netlify
+frontend/.*.dockerfile
+frontend/.vs

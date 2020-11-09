@@ -1,10 +1,11 @@
 from stablecoin.bank.payment_system import PaymentSystem
 from dataclasses                    import dataclass
 from enum                           import Enum
-from stablecoin.blockchain.ipv8     import MyTrustChainCommunity
+from stablecoin.blockchain.ipv8     import MyTrustChainCommunity, EuroTokenCommunity
 from datetime                       import datetime
 
 from binascii import hexlify, unhexlify
+import base64
 
 class TrustChain(PaymentSystem):
 
@@ -24,7 +25,10 @@ class TrustChain(PaymentSystem):
 
     def __init__(self, identity, ipv8, address=("127.0.0.1", 8090)):
         self.trustchain = ipv8.get_overlay(MyTrustChainCommunity)
-        self.identity = hexlify(self.trustchain.my_peer.public_key.key_to_bin())
+        self.eurotoken  = ipv8.get_overlay(EuroTokenCommunity)
+        self.eurotoken.set_callback_instance(self)
+
+        self.identity = self.trustchain.my_peer.public_key.key_to_bin().hex()
         self.address = address
         self.payment_request_map = {}
         self.payout_log = {}
@@ -36,6 +40,9 @@ class TrustChain(PaymentSystem):
                 'ip' : self.address[0],
                 'port' : self.address[1]
                 }
+
+    def on_user_connection(self, payment_id, user_pk, user_ip, user_port ):
+        self.stablecoin.CREATE_connect(payment_id, user_pk, user_ip, user_port)
 
     "OLD"
 
@@ -80,22 +87,9 @@ class TrustChain(PaymentSystem):
 
         now = datetime.now()
 
-        transaction_id = self.get_new_id()
+        # transaction_id = self.get_new_id()
 
-        # self.transactions[transaction_id] = {
-        #         "type": "chain",
-        #         "amount": amount,
-        #         "timestamp": now,
-        #         "status": "payout",
-        #         "wallet": self.identity,
-        #         "counterparty": account
-        #         }
-
-        # self.update_balance(account, amount)
-
-        self.trustchain.send_test()
-
-        return transaction_id
+        return self.trustchain.send_money(amount, public_key, ip, port)
 
     "Bookkeeping functions"
 

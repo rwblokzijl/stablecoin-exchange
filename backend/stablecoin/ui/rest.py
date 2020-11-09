@@ -48,7 +48,7 @@ class APIEndpoint(BaseEndpoint):
 
             #"Destruction"
             # Step 1 -> returns: wallet_address and payment id to send money to with trustchain ipv8
-            web.post( '/exchange/t2e',         self.REST_DESTROY_initiate),
+            web.post( '/exchange/t2e/initiate',         self.REST_DESTROY_initiate),
             # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
 
             #"Other"
@@ -56,7 +56,7 @@ class APIEndpoint(BaseEndpoint):
             web.get(  '/exchange/e2t/rate',    self.exchange_rate_euro_to_token),
             web.get(  '/exchange/t2e/rate',    self.exchange_rate_token_to_euro),
             #"get payment status"
-            web.get(  '/exchange/payment',     self.exchange_status),
+            web.get(  '/exchange/status',     self.exchange_status),
 
             # "Old"
             #"actual exchange (creation/destruction)"
@@ -72,6 +72,32 @@ class APIEndpoint(BaseEndpoint):
             web.post( '/exchange/complete', self.complete_payment), #tested
         ])
 
+    def get_status_dict(self, t):
+        transaction = self.clean_transaction_status(copy(t.data)) #copy
+
+        return {
+            "status":                   transaction['status'],
+            "status_text":              transaction['status_text'],
+            "created":                  transaction['created_on'],
+            "payment_amount":           transaction['amount'],
+            "payout_amount":            transaction['payout_amount'],
+            "payment_currency":         transaction['payment_currency'],
+            "payout_currency":          transaction['payout_currency'],
+            "payment_id":               transaction['payment_id'],
+            "connection_info":          transaction['connection_info'],
+
+            "payout_info":              transaction.get('payout_info', None),
+
+            "payment_transaction_data": transaction.get('payment_transaction_data', None),
+            "payment_started_on":       transaction.get('payment_started_on', None),
+
+            "payment_confirmed_on":     transaction.get('payment_confirmed_on', None),
+
+            "payout_done_on":           transaction.get('payout_done_on', None),
+            "payout_transaction_id":    transaction.get('payout_transaction_id', None)
+            }
+
+
     "Creation"
     # Step 1 -> returns info to connect to gateway over ipv8
     async def REST_CREATE_initiate(self, request):
@@ -79,12 +105,11 @@ class APIEndpoint(BaseEndpoint):
 
         collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
 
-        transaction = self.stablecoin_interactor.CREATE_initiate(collatoral_cent)
+        t = self.stablecoin_interactor.CREATE_initiate(collatoral_cent)
 
-        return web.json_response({
-            "payment_id" : transaction['payment_id'],
-            "connection_info" : transaction['connection_info']
-            })
+        response = self.get_status_dict(t)
+
+        return web.json_response(response)
 
     # Step 2 -> user connects through ipv8 to register its node and address
     # Over trustchain
@@ -92,29 +117,39 @@ class APIEndpoint(BaseEndpoint):
     # Step 3 -> returns the payment link to the user
     async def REST_CREATE_start_payment(self, request):
 
-        if "payment_id" not in request.query:
+        data = dict(await request.json())
+
+        if "payment_id" not in data:
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
-        payment_id = request.query["payment_id"]
+        payment_id = data["payment_id"]
 
         transaction = self.stablecoin_interactor.CREATE_start_payment(payment_id)
 
-        return web.json_response({
-            "payment_id" : transaction['payment_id'],
-            "payment_link" : transaction['payment_transaction_data']
-            })
+        if not transaction:
+            raise web.HTTPNotFound(reason="Transaction not found")
+
+        response = self.get_status_dict(transaction)
+
+        return web.json_response(response)
 
     # Step 4 -> triggers_payout
     async def REST_CREATE_finish_payment(self, request):
-        if "payment_id" not in request.query:
+        data = dict(await request.json())
+
+        if "payment_id" not in data:
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
-        payment_id = request.query["payment_id"]
+        payment_id = data["payment_id"]
 
-        transaction = self.stablecoin_interactor.CREATE_start_payment(payment_id)
+        transaction = await self.stablecoin_interactor.CREATE_finish_payment(payment_id)
 
-        return web.json_response({
-            "payment_id" : transaction['payment_id'],
-            "payout_id" : transaction['payout_transaction_id']
-            })
+        print("wtf")
+
+        if not transaction:
+            raise web.HTTPNotFound(reason="Transaction not found")
+
+        response = self.get_status_dict(transaction)
+
+        return web.json_response(response)
 
     "Destruction"
     # Step 1 -> returns: wallet_address and payment id to send money to with trustchain ipv8
@@ -138,12 +173,15 @@ class APIEndpoint(BaseEndpoint):
     " Test functions "
     async def complete_payment(self, request):
         data = dict(await request.json())
-        # print(data["payment_id"])
         if "payment_id" not in data:
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
         if "counterparty" not in data:
             raise web.HTTPBadRequest(reason="Missing 'counterparty'")
         status = self.stablecoin_interactor.complete_payment(data["payment_id"], data["counterparty"])
+
+        if not status:
+            raise web.HTTPNotFound(reason="Transaction not found")
+
         if status:
             return web.json_response()
         else:
@@ -174,19 +212,19 @@ class APIEndpoint(BaseEndpoint):
 
     # Get info on existing transaction
     async def exchange_status(self, request):
-        # payment_id = request.match_info.get('payment_id')#.encode("ascii")
         if "payment_id" not in request.query:
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
 
         payment_id = request.query["payment_id"]
 
-        payment_data = self.stablecoin_interactor.transaction_status(payment_id)
+        transaction = self.stablecoin_interactor.get_transaction(payment_id)
 
-        print(payment_data)
+        if not transaction:
+            raise web.HTTPNotFound(reason="Transaction not found")
 
-        payment_data = self.clean_transaction_status(payment_data)
+        response = self.get_status_dict(transaction)
 
-        return web.json_response(payment_data)
+        return web.json_response(response)
 
     # Helpers
     def validate_euro_to_token_request_collatoral(self, request_data):
@@ -202,16 +240,17 @@ class APIEndpoint(BaseEndpoint):
             raise web.HTTPBadRequest(reason="Missing 'dest_wallet' field.")
         return request_data["dest_wallet"]
 
-    def clean_transaction_status(self, transaction):
-        t = copy(transaction)
-        if "status" in t:
-            t["status_text"] = self.clean_status(t["status"])
-            t["status"]      = t["status"].value
-        return t
+    def clean_transaction_status(self, transaction_data):
+        if "status" in transaction_data:
+            transaction_data["status_text"] = self.clean_status(transaction_data["status"])
+            transaction_data["status"]      = transaction_data["status"].value
+        return transaction_data
 
     def clean_status(self, status):
         if status == Transaction.Status.CREATED:
             return "Transaction created"
+        elif status == Transaction.Status.PAYMENT_READY:
+            return "Ready for payment"
         elif status == Transaction.Status.PAYMENT_PENDING:
             return "Waiting for payment"
         elif status == Transaction.Status.PAYMENT_DONE:

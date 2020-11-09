@@ -104,34 +104,60 @@
     </div>
 
     <div class="col-xs-12">
-      <h2>Exchange History</h2>
+      <h2>Open transactions</h2>
     </div>
 
     <div class="row">
-      <div class="col-md-6 col-xs-12 table-responsive">
+      <div class="col-xs-12 table-responsive">
         <table
           role="grid"
           id="example1"
           class="table table-bordered table-striped dataTable">
           <thead>
             <tr role="row">
-              <th style="width: 167px;" colspan="1" rowspan="1" tabindex="0">Created</th>
-              <th style="width: 182px;" colspan="1" rowspan="1" tabindex="0">Amount</th>
-              <th style="width: 142px;" colspan="1" rowspan="1" tabindex="0">Paid</th>
-              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0">ID</th>
-              <th style="width: 101px;" colspan="1" rowspan="1" tabindex="0">Status</th>
+              <th colspan="1" rowspan="1" tabindex="0">Created</th>
+              <th colspan="1" rowspan="1" tabindex="0">Amount</th>
+              <th colspan="1" rowspan="1" tabindex="0">Price</th>
+              <th colspan="1" rowspan="1" tabindex="0">ID</th>
+              <th colspan="1" rowspan="1" tabindex="0">Status</th>
+              <th colspan="1" rowspan="1" tabindex="0">Next Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="transaction in transactions" class="even" role="row">
-              <td>{{transaction.created_on}}</td>
-              <td>{{centToWhole(transaction.payout_amount)}} {{transaction.payout_currency}}</td>
-              <td>{{centToWhole(transaction.amount)}} {{transaction.payment_currency}}</td>
-              <td>{{transaction.payment_id}}</td>
+            <tr v-for="payment in payments" class="even" role="row">
+
+              <td>{{payment.created}}</td>
+              <td>{{centToWhole(payment.payout_amount)}} {{payment.payout_currency}}</td>
+              <td>{{centToWhole(payment.payment_amount)}} {{payment.payment_currency}}</td>
               <td>
-                <a :disabled="transaction.status != 1 " v-on:click="confirmTransaction(transaction.payment_id,
-                                                       transaction.counterparty_account)" class="btn btn-primary" role="button">
-                  {{transaction.status_text}}
+                <!-- {{payment.payment_id}} -->
+              </td>
+              <td>
+                <!-- {{payment.status_text}} -->
+              </td>
+              <td>
+                <modal :name="payment.payment_id">
+                  {{payment.status}}
+                  <p v-if="payment.status === 0">
+                  {{get_connection_data(payment)}}
+                  <qrcode :value="get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
+                  </p>
+                  <p v-else-if="payment.status === 1">
+                  <a @click="start_payment(payment.payment_id)" class="btn">Pay with Tikkie</a>
+                  </p>
+                  <p v-else-if="payment.status === 2">
+                    <!-- {{payment}} -->
+                    {{payment.payment_transaction_data}}
+                    <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
+                  </p>
+                  <p v-else-if="payment.status === 3">
+                  </p>
+                  <p v-else-if="payment.status === 4">
+                  </p>
+                  <a @click="hide(payment.payment_id)">Hide</a>
+                </modal>
+                <a @click="show(payment.payment_id)" :disabled="payment.status === 4" class="btn btn-primary" role="button">
+                  {{next_action(payment)}}
                 </a>
               </td>
             </tr>
@@ -140,9 +166,10 @@
             <tr>
               <th colspan="1" rowspan="1">Created</th>
               <th colspan="1" rowspan="1">Amount</th>
-              <th colspan="1" rowspan="1">Paid</th>
+              <th colspan="1" rowspan="1">Price</th>
               <th colspan="1" rowspan="1">ID</th>
               <th colspan="1" rowspan="1">Status</th>
+              <th colspan="1" rowspan="1">Next Action</th>
             </tr>
           </tfoot>
         </table>
@@ -174,13 +201,13 @@ export default {
   watch: {
     account: function () {
       this.updateTransactions()
-      this.updateBalance()
     }
   },
   data: function() {
     return {
+      payments: {},
       store: stores.store.state,
-      exchangeAmountE2T: null,
+      exchangeAmountE2T: 100,
       exchangeAmountT2E: null,
       balanceCent: 0,
       rateE2Tcent: 99,
@@ -212,19 +239,87 @@ export default {
     }
   },
   methods: {
+    next_action(payment) {
+      if (payment.status === 0) {
+        return 'Connect to gateway'
+      } else if (payment.status === 1) {
+        return 'Select payment method'
+      } else if (payment.status === 2) {
+        return 'Waiting for payment'
+      } else if (payment.status === 3) {
+        return 'Connect to gateway'
+      } else if (payment.status === 4) {
+        return 'Payout done'
+      }
+    },
+    clearPayments() {
+      this.payments = {}
+      this.$cookies.remove('payments')
+    },
+    get_connection_data(payment) {
+      var data = {}
+      data.payment_id = payment.payment_id
+      data.public_key = payment.connection_info.public_key
+      data.ip = payment.connection_info.ip
+      data.port = payment.connection_info.port
+      return JSON.stringify(data)
+    },
+    show (paymentId) {
+      this.$modal.show(paymentId)
+    },
+    hide (paymentId) {
+      this.$modal.hide(paymentId)
+    },
+    set_payment(payment) {
+      this.payments[payment.payment_id] = payment
+      this.setPayments()
+    },
+    remove_payment(paymentId) {
+      delete this.payments[paymentId]
+      this.setPayments()
+    },
+    updatePayments() {
+      if (this.$cookies.isKey('payments')) {
+        this.payments = this.$cookies.get('payments')
+      } else {
+        this.payments = {}
+      }
+    },
+    setPayments() {
+      this.$cookies.set('payments', this.payments || {})
+      this.updatePayments()
+    },
     centToWhole (amount) {
       return (amount / 100).toFixed(2)
     },
     initExchangeE2T () {
       if (!this.exchangeAmountE2T) { return }
       let amount = this.exchangeAmountE2T * 100
-      this.exchangeAmountE2T = null
-      axios.post('/api/exchange/e2t', {
-        collatoral_cent: amount,
-        dest_wallet: this.account,
-        counterparty: 'IBAN123'
-      }).then(response => console.log(response.data.token))
-      .then(this.updateTransactions())
+      this.exchangeAmountE2T = 100
+
+      axios.post('/api/exchange/e2t/initiate', {
+        collatoral_cent: amount
+      }).then(response => {
+        this.set_payment(response.data)
+      })
+        .then(this.updateTransactions())
+    },
+    start_payment (paymentId) {
+      axios.post('/api/exchange/e2t/start_payment', {
+        payment_id: paymentId
+      }).then(response => {
+        this.set_payment(response.data)
+        this.transaction_status_changed(paymentId)
+      })
+    },
+    finish_payment (paymentId) {
+      // Fake callback
+      axios.post('/api/exchange/e2t/finish_payment', {
+        payment_id: paymentId
+      }).then(response => {
+        this.set_payment(response.data)
+        this.transaction_status_changed(paymentId)
+      })
     },
     initExchangeT2E () {
       if (!this.exchangeAmountT2E) { return }
@@ -235,7 +330,7 @@ export default {
         destination_iban: 'IBAN123',
         counterparty: this.account
       }).then(response => console.log(response.data.token))
-      .then(this.updateTransactions())
+        .then(this.updateTransactions())
       this.store.account = 'hi'
     },
     confirmTransaction (paymentId, counterparty) {
@@ -248,7 +343,7 @@ export default {
           payment_id: paymentId
         }
       }).then(this.updateTransactions())
-      .then(this.updateBalance())
+      // .then(this.updateBalance())
     },
     updateBalance () {
       axios.get('/api/transactions/balance', {
@@ -258,11 +353,45 @@ export default {
       }).then(response => { this.balanceCent = response.data.balance })
     },
     updateTransactions () {
-      axios.get('/api/transactions/wallet', {
-        params: {
-          wallet: this.account
-        }
-      }).then(response => { this.transactions = response.data })
+      for (let paymentId in this.payments) {
+        axios.get('/api/exchange/status', {
+          params: {
+            'payment_id': paymentId
+          }
+        })
+          .then(response => {
+            if (this.payments[paymentId].status !== response.data.status) {
+              this.set_payment(response.data)
+              this.transaction_status_changed(paymentId)
+            }
+          })
+          .catch(error => {
+            if (error.response) {
+              if (error.response.status === 404) {
+                this.remove_payment(paymentId)
+              }
+            }
+          })
+      }
+    },
+    transaction_status_changed(paymentId) {
+      const payment = this.payments[paymentId]
+      const status = payment.status
+
+      // hide all modals
+      this.hide(paymentId)
+
+      if (status === 0) { // CREATED = 0
+        // trigger connection modal
+      } else if (status === 1) { // PAYMENT_READY = 1
+        // trigger tikkie modal
+      } else if (status === 2) { // PAYMENT_PENDING = 2
+        // update tikkie modal to waiting
+      } else if (status === 3) { // PAYMENT_DONE = 3
+        // show connection modal
+      } else if (status === 4) { // PAYOUT_DONE = 4
+        // show success toast
+      }
     },
     onlyForCurrencyE2T ($event) {
       // console.log($event.keyCode); //keyCodes value
@@ -298,17 +427,9 @@ export default {
       .then(response => { this.rateE2Tcent = response.data.token })
     axios.get('/api/exchange/t2e/rate')
       .then(response => { this.rateT2Ecent = response.data.eur })
-    this.updateBalance()
-    this.updateTransactions()
-    // this.$nextTick(() => {
-    //   $('#example1').DataTable({
-    //     'order': [],
-    //     'oLanguage': {
-    //       'sLengthMenu': 'Show _MENU_ transactions',
-    //       'sInfo': 'Showing _START_ to _END_ of _TOTAL_ transactions'
-    //     }
-    //   })
-    // })
+    this.updatePayments()
+    // this.updateBalance()
+    this.timer = setInterval(this.updateTransactions, 1000)
   }
 }
 </script>

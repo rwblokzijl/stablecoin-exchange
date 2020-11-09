@@ -21,6 +21,8 @@ class StableCoin(ABC):
         self.bank        = bank
         self.persistence = persistence
         self.blockchain  = blockchain
+        self.blockchain.set_callback_instance(self)
+
         self.provider_map = {
                 "bank" : self.bank,
                 "blockchain" : self.blockchain
@@ -89,9 +91,14 @@ class StablecoinInteractor(StableCoin):
             print("connect: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
-        transaction.add_user_connection_info(self, pubkey, ip, port)
+        transaction.add_user_connection_info(pubkey, ip, port)
 
         self.persistence.update_transaction(transaction)
+
+        # Steps for skipping payment and going directly to send
+        # self.CREATE_connect(transaction["payment_id"], "kek", "sdf", 4)
+        # self.CREATE_start_payment(transaction["payment_id"])
+        # return self.CREATE_finish_payment(transaction["payment_id"])
 
         return transaction
 
@@ -110,7 +117,7 @@ class StablecoinInteractor(StableCoin):
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
-        payment_transaction_link = payment_provider.create_payment_request(collatoral_amount_cent)
+        payment_transaction_link = payment_provider.create_payment_request(transaction["amount"])
 
         transaction.start_payment(
                 payment_transaction_data=payment_transaction_link
@@ -121,7 +128,7 @@ class StablecoinInteractor(StableCoin):
         return transaction
 
     # Step 4 -> triggers_payout
-    def CREATE_finish_payment(self):
+    async def CREATE_finish_payment(self, payment_id):
         "Pays out tokens to pubkey@ip:port"
 
         transaction = self.persistence.get_payment_by_id(payment_id)
@@ -135,21 +142,29 @@ class StablecoinInteractor(StableCoin):
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
-        payment_counterparty = payment_provider.attempt_payment_done(transaction["payment_transaction_id"])
+
+        # TODO: remove
+        payment_provider.payment_done_trigger(transaction["payment_transaction_data"], "IBAN")
+
+        payment_counterparty = payment_provider.attempt_payment_done(transaction["payment_transaction_data"])
 
         if payment_counterparty:
             transaction.confirm_payment(payment_counterparty)
 
             payout_provider = self.provider_map[transaction["payout_provider"]]
-            payout_id = payout_provider.initiate_payment(
+            payout_id = await payout_provider.initiate_payment(
                     transaction["payout_info"],
                     transaction["payout_amount"])
+            print(payout_id)
             if payout_id:
                 transaction.payout_done(payout_id)
 
         self.persistence.update_transaction(transaction)
 
         return transaction
+
+    def get_transaction(self, payment_id):
+        return self.persistence.get_payment_by_id(payment_id)
 
     "Destruction interface"
     # Step 1 -> returns: wallet_address and payment id to send money to with trustchain ipv8

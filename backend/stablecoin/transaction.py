@@ -18,6 +18,9 @@ class Transaction:
     def __contains__(self, key):
         return key in self.data
 
+    def get(self, key, default=None):
+        return self.data.get(key)
+
     def __getitem__(self, key):
         return self.data[key]
 
@@ -66,8 +69,7 @@ class Transaction:
     # Step 3: Add payment information
     def start_payment(self, payment_transaction_data):
         self.data["payment_transaction_data"] = payment_transaction_data
-
-        self.data["started_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
+        self.data["payment_started_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
 
         self.data["status"] = self.Status.PAYMENT_PENDING
 
@@ -81,7 +83,7 @@ class Transaction:
 
     # Step 4: Finish payout
     def payout_done(self, payout_transaction_id):
-        self.data["payment_done_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
+        self.data["payout_done_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
         self.data["payout_transaction_id"] = payout_transaction_id
         self.data["status"] = self.Status.PAYOUT_DONE
 
@@ -108,7 +110,7 @@ class Transaction:
                 "amount"              : payment_data["amount"],
                 "payout_amount"       : payment_data["payout_amount"],
                 # "destination_account" : payment_data["payout_amount"],
-                "rand"                : random.randbytes
+                "rand"                : chr(random.randint(0, 2^64))
                 }
         serialised = json.dumps(relevant_data, sort_keys=True, ensure_ascii=True).encode('utf-8')
         return base64.b64encode(hashlib.sha1(

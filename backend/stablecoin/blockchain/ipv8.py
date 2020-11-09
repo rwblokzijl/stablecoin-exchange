@@ -1,8 +1,13 @@
-from ipv8.attestation.trustchain.block import TrustChainBlock, ValidationResult
-from ipv8.attestation.trustchain.listener import BlockListener
+from ipv8.attestation.trustchain.block     import TrustChainBlock, ValidationResult
 from ipv8.attestation.trustchain.community import TrustChainCommunity
-from ipv8.keyvault.crypto import ECCrypto
-from ipv8.peer import Peer
+from ipv8.attestation.trustchain.listener  import BlockListener
+from ipv8.community                        import Community
+from ipv8.keyvault.crypto                  import ECCrypto
+from ipv8.lazy_community                   import lazy_wrapper
+from ipv8.messaging.lazy_payload           import VariablePayload, vp_compile
+from ipv8.messaging.serialization          import Serializable
+
+from ipv8.peer                             import Peer
 
 from binascii import hexlify, unhexlify
 
@@ -130,17 +135,53 @@ class MyTrustChainCommunity(TrustChainCommunity):
                 # self.send_transaction(peer, 5)
         # self.register_task("start_communication", start_communication, interval=5.0, delay=0)
 
-    def send_test(self):
-        peer_key = unhexlify("4c69624e61434c504b3a88e521769ebc0cf3ac7196317c3c52bc1a4f9043cff11ca7b3a95ac9e17fd937bfbd3ec432695f87f89303af415863d6b644fe3c58b9a56674ece6e1dfab1b68")
-        print(self.master_peer)
-        print(self.get_peers())
-        # self.send_transaction_to_peer(peer, 100)
+    def send_money(self, amount, public_key, ip, port):
+        key = b"LibNaCLPK:" + public_key.encode('utf-8')
+        peer = Peer( ECCrypto().key_from_public_bin(key) )
+        peer.add_address((ip, port))
+        return self.send_transaction_to_peer(peer, amount)
 
     def send_transaction_to_peer(self, peer, amount):
-        self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=b'transfer', transaction={
+        return self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=b'transfer', transaction={
             'amount': amount
             })
 
+@vp_compile
+class GatewayConnectMessage(VariablePayload):
+    msg_id      = 1  # Gateway Connect message
+    format_list = ["Q", "varlenI"]
+    names       = ["global_time", "payment_id"]
+
+class EuroTokenCommunity(Community):
+
+    # import os
+    community_id = bytes.fromhex("f0eb36102436bd55c7a3cdca93dcaefb08df0750")
+
+    def __init__(self, my_peer, endpoint, network):
+        super().__init__(my_peer, endpoint, network)
+        # Register the message handler for messages with the identifier "1".
+        self.add_message_handler(1, self.on_message)
+
+    def set_callback_instance(self, eurotoken_blockchain):
+        print("set eb")
+        self.eurotoken_blockchain = eurotoken_blockchain
+
+    def started(self):
+        print("started eurotoken")
+        async def start_communication():
+            peers = self.get_peers()
+            print( str(len(peers)) + " EuroToken peers")
+            for peer in peers:
+                print(peer)
+                # self.send_transaction(peer, 5)
+        # self.register_task("start_communication", start_communication, interval=5.0, delay=0)
+
+    @lazy_wrapper(GatewayConnectMessage)
+    def on_message(self, peer, payload):
+        payment_id = payload.payment_id.decode('utf-8')
+        pubkey = peer.public_key.key_to_bin().hex()
+
+        self.eurotoken_blockchain.on_user_connection(payment_id, pubkey, peer.address[0], peer.address[1])
 
 
 

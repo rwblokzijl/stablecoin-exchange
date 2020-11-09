@@ -7,7 +7,7 @@ class BankStub(Bank):
 
     class Status(Enum):
         PAYMENT_PENDING = 0
-        PAYMENT_DONE = 0
+        PAYMENT_DONE = 1
 
     def __init__(self):
         self.account = "FAKEIBAN"
@@ -64,7 +64,7 @@ class BankStub(Bank):
     "Creation Step 4"
     def attempt_payment_done(self, transaction_id):
         if transaction_id in self.transactions:
-            "STUB WAY TO SUCCEED TRANSACTION"
+            "STUB WAY TO SUCCEED TRANSACTION, (only if exists)"
             if self.transactions[transaction_id]["status"] == self.Status.PAYMENT_DONE:
                 return self.transactions[transaction_id]["counterparty"]
             else:
@@ -103,5 +103,5 @@ class BankStub(Bank):
 
     def get_new_id(self):
         self.last_id += 1
-        return self.last_id
+        return "http://payment.link/id/" + str(self.last_id) + "/"
 
