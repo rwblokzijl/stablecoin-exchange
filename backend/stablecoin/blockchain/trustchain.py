@@ -27,6 +27,7 @@ class TrustChain(PaymentSystem):
         self.trustchain = ipv8.get_overlay(MyTrustChainCommunity)
         self.eurotoken  = ipv8.get_overlay(EuroTokenCommunity)
         self.eurotoken.set_callback_instance(self)
+        self.trustchain.set_callback_instance(self)
 
         self.identity = self.trustchain.my_peer.public_key.key_to_bin().hex()
         self.address = address
@@ -48,36 +49,20 @@ class TrustChain(PaymentSystem):
 
     "Payment side"
 
-    "Step 0: Creation"
-    #TODO
     def create_payment_request(self, amount):
-        "Returns payment id if succesful"
-        "does nothing, simply notes the amount in the DB with a unique ID"
+        "Does nothing, simply returns connection info"
+        return self.get_connection_info()
 
-        now = datetime.now()#.strftime("%Y/%m/%d, %H:%M:%S")
+    def payment_request_status(self, pid):
+        return False
 
-        transaction_id = self.get_new_id()
-
-        self.payment_request_map[transaction_id] = TrustChainPaymentRequest(
-                pid=transaction_id,
-                amount=amount,
-                timestamp=now,
-                wallet=self.identity
-                )
-
-        return transaction_id
-
-
-    "Step 1: Waiting"
-    #TODO
-    def payment_request_status(self, identifier):
-        "Returns status of transaction???, will include payee when payment successful"
-        return self.payment_request_map[identifier].status
+    def on_payment(self, payment_id, amount, user_pk):
+        return self.stablecoin.DESTROY_pay(payment_id, amount, user_pk)
 
     "Payout side"
 
     "Step 2: Start the payout"
-    #TODO
+    #TODO return block id
     def initiate_payment(self, account, amount):
         "Returns transaction_id if successful"
 

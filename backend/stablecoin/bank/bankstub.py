@@ -78,7 +78,9 @@ class BankStub(Bank):
         "Returns transaction_id if successful"
         now = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 
-        transaction_id = self.get_new_id()
+        return "PAYED OUT AT " + now
+
+        # transaction_id = self.get_new_id()
 
         self.transactions[transaction_id] = {
                 "type":         "bank",

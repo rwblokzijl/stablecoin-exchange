@@ -58,17 +58,7 @@ class APIEndpoint(BaseEndpoint):
             #"get payment status"
             web.get(  '/exchange/status',     self.exchange_status),
 
-            # "Old"
-            #"actual exchange (creation/destruction)"
-            web.post( '/exchange/e2t',         self.exchange_euro_to_token),
-            web.post( '/exchange/t2e',         self.exchange_token_to_euro),
-
             #"FOR TESTING"
-            #"get transactions for wallet/iban"
-            web.get(  '/transactions/iban',    self.get_iban_transactions),
-            web.get(  '/transactions/wallet',  self.get_wallet_transactions),
-            web.get(  '/transactions/balance', self.get_wallet_balance),
-
             web.post( '/exchange/complete', self.complete_payment), #tested
         ])
 
@@ -84,17 +74,18 @@ class APIEndpoint(BaseEndpoint):
             "payment_currency":         transaction['payment_currency'],
             "payout_currency":          transaction['payout_currency'],
             "payment_id":               transaction['payment_id'],
-            "connection_info":          transaction['connection_info'],
 
-            "payout_info":              transaction.get('payout_info', None),
+            "gateway_connection_data":  transaction.get('gateway_connection_data', None),
 
-            "payment_transaction_data": transaction.get('payment_transaction_data', None),
+            "payment_connection_data":  transaction.get('payment_connection_data', None),
             "payment_started_on":       transaction.get('payment_started_on', None),
 
+            "payment_transaction_data": transaction.get('payment_transaction_data', None),
             "payment_confirmed_on":     transaction.get('payment_confirmed_on', None),
 
+            "payout_connection_data":   transaction.get('payout_connection_data', None),
+            "payout_transaction_data":  transaction.get('payout_transaction_data', None),
             "payout_done_on":           transaction.get('payout_done_on', None),
-            "payout_transaction_id":    transaction.get('payout_transaction_id', None)
             }
 
 
@@ -140,7 +131,7 @@ class APIEndpoint(BaseEndpoint):
             raise web.HTTPBadRequest(reason="Missing 'payment_id'")
         payment_id = data["payment_id"]
 
-        transaction = await self.stablecoin_interactor.CREATE_finish_payment(payment_id)
+        transaction = self.stablecoin_interactor.CREATE_finish_payment(payment_id)
 
         print("wtf")
 
@@ -161,10 +152,9 @@ class APIEndpoint(BaseEndpoint):
 
         transaction = self.stablecoin_interactor.DESTROY_initiate(amount, iban)
 
-        return web.json_response({
-            "payment_id" : transaction['payment_id'],
-            "payment_data" : transaction['payment_transaction_data']
-            })
+        response = self.get_status_dict(transaction)
+
+        return web.json_response(response)
 
     # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
     # Over trustchain
@@ -223,6 +213,10 @@ class APIEndpoint(BaseEndpoint):
             raise web.HTTPNotFound(reason="Transaction not found")
 
         response = self.get_status_dict(transaction)
+
+        for item, value in response.items():
+            if type(value) is bytes:
+                print(item,  ": ",  type(value), value)
 
         return web.json_response(response)
 

@@ -136,11 +136,11 @@
                 <!-- {{payment.status_text}} -->
               </td>
               <td>
-                <modal :name="payment.payment_id">
+                <modal v-if="payment.payout_currency === 'eurotoken'" :name="payment.payment_id">
                   {{payment.status}}
                   <p v-if="payment.status === 0">
-                  {{get_connection_data(payment)}}
-                  <qrcode :value="get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
+                  {{CREATE_get_connection_data(payment)}}
+                  <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
                   </p>
                   <p v-else-if="payment.status === 1">
                   <a @click="start_payment(payment.payment_id)" class="btn">Pay with Tikkie</a>
@@ -151,8 +151,30 @@
                     <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
                   </p>
                   <p v-else-if="payment.status === 3">
+                    {{CREATE_get_connection_data(payment)}}
+                    <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
                   </p>
                   <p v-else-if="payment.status === 4">
+                  </p>
+                  <a @click="hide(payment.payment_id)">Hide</a>
+                </modal>
+                <modal v-else-if="payment.payout_currency === 'euro'" :name="payment.payment_id">
+                  {{payment.status}}
+                  <p v-if="payment.status === 0">
+                  ???
+                  </p>
+                  <p v-else-if="payment.status === 1">
+                  ???
+                  </p>
+                  <p v-else-if="payment.status === 2">
+                    {{DESTROY_payment_info(payment)}}
+                    <qrcode :value="DESTROY_payment_info(payment)" :options="{ width: 200 }"></qrcode>
+                  </p>
+                  <p v-else-if="payment.status === 3">
+                    ??
+                  </p>
+                  <p v-else-if="payment.status === 4">
+                    ??
                   </p>
                   <a @click="hide(payment.payment_id)">Hide</a>
                 </modal>
@@ -207,7 +229,7 @@ export default {
     return {
       payments: {},
       store: stores.store.state,
-      exchangeAmountE2T: 100,
+      exchangeAmountE2T: null,
       exchangeAmountT2E: null,
       balanceCent: 0,
       rateE2Tcent: 99,
@@ -240,28 +262,53 @@ export default {
   },
   methods: {
     next_action(payment) {
-      if (payment.status === 0) {
-        return 'Connect to gateway'
-      } else if (payment.status === 1) {
-        return 'Select payment method'
-      } else if (payment.status === 2) {
-        return 'Waiting for payment'
-      } else if (payment.status === 3) {
-        return 'Connect to gateway'
-      } else if (payment.status === 4) {
-        return 'Payout done'
+      if (payment.payout_currency === 'eurotoken') {
+        if (payment.status === 0) {
+          return 'Connect to gateway'
+        } else if (payment.status === 1) {
+          return 'Select payment method'
+        } else if (payment.status === 2) {
+          return 'Waiting for payment'
+        } else if (payment.status === 3) {
+          return 'Connect to gateway'
+        } else if (payment.status === 4) {
+          return 'Payout done'
+        }
+      } else if (payment.payout_currency === 'euro') {
+        if (payment.status === 0) {
+          return '??'
+        } else if (payment.status === 1) {
+          return '??'
+        } else if (payment.status === 2) {
+          return 'Pay using IPv8'
+        } else if (payment.status === 3) {
+          return '??'
+        } else if (payment.status === 4) {
+          return 'Payout done'
+        }
       }
     },
     clearPayments() {
       this.payments = {}
       this.$cookies.remove('payments')
     },
-    get_connection_data(payment) {
+    DESTROY_payment_info(payment) {
       var data = {}
       data.payment_id = payment.payment_id
-      data.public_key = payment.connection_info.public_key
-      data.ip = payment.connection_info.ip
-      data.port = payment.connection_info.port
+      data.amount = payment.payment_amount
+
+      data.public_key = payment.gateway_connection_data.public_key
+      data.ip = payment.gateway_connection_data.ip
+      data.port = payment.gateway_connection_data.port
+      return JSON.stringify(data)
+    },
+    CREATE_get_connection_data(payment) {
+      var data = {}
+      data.payment_id = payment.payment_id
+
+      data.public_key = payment.gateway_connection_data.public_key
+      data.ip = payment.gateway_connection_data.ip
+      data.port = payment.gateway_connection_data.port
       return JSON.stringify(data)
     },
     show (paymentId) {
@@ -295,7 +342,7 @@ export default {
     initExchangeE2T () {
       if (!this.exchangeAmountE2T) { return }
       let amount = this.exchangeAmountE2T * 100
-      this.exchangeAmountE2T = 100
+      this.exchangeAmountE2T = null
 
       axios.post('/api/exchange/e2t/initiate', {
         collatoral_cent: amount
@@ -324,14 +371,14 @@ export default {
     initExchangeT2E () {
       if (!this.exchangeAmountT2E) { return }
       let amount = this.exchangeAmountT2E * 100
-      this.exchangeAmountT2E = null
-      axios.post('/api/exchange/t2e', {
+      // this.exchangeAmountT2E = null
+      axios.post('/api/exchange/t2e/initiate', {
         token_amount_cent: amount,
-        destination_iban: 'IBAN123',
-        counterparty: this.account
-      }).then(response => console.log(response.data.token))
-        .then(this.updateTransactions())
-      this.store.account = 'hi'
+        destination_iban: this.account
+      }).then(response => {
+        console.log(response.data)
+        this.set_payment(response.data)
+      }).then(this.updateTransactions())
     },
     confirmTransaction (paymentId, counterparty) {
       axios.post('/api/exchange/complete', {

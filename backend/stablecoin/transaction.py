@@ -30,62 +30,59 @@ class Transaction:
             payment_provider, payment_currency,
             payout_provider, payout_currency,
             amount, payout_amount,
-            payout_info=None,
-            connection_info=None,
+            gateway_connection_data,
+            payout_connection_data=None
             ):
 
-        self.data                     = dict()
+        self.data                             = dict()
 
-        self.data["amount"]           = amount
-        self.data["payout_amount"]    = payout_amount
+        self.data["amount"]                   = amount
+        self.data["payout_amount"]            = payout_amount
 
-        self.data["payment_provider"] = payment_provider
-        self.data["payment_currency"] = payment_currency
+        self.data["payment_provider"]         = payment_provider
+        self.data["payment_currency"]         = payment_currency
 
-        self.data["payout_provider"]  = payout_provider
-        self.data["payout_currency"]  = payout_currency
+        self.data["payout_provider"]          = payout_provider
+        self.data["payout_currency"]          = payout_currency
 
-        self.data["created_on"]       = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
+        self.data["created_on"]               = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
 
-        self.data["status"]           = self.Status.CREATED
+        self.data["status"]                   = self.Status.CREATED
 
-        self.data["connection_info"]  = connection_info
-        if payout_info:
-            self.data["payout_info"]      = payout_info
-            self.data["status"]           = self.Status.PAYMENT_READY
+        self.data["gateway_connection_data"] = gateway_connection_data
 
-        self.data["payment_id"]       = self.generate_payment_id(self.data)
+        if payout_connection_data:
+            self.data["payout_connection_data"]  = payout_connection_data
+            self.data["status"]                  = self.Status.PAYMENT_READY
 
-    "Creation steps"
+        self.data["payment_id"]               = self.generate_payment_id(self.data)
+
+    "Creation step"
     # Step 2: Add user connection info
-    def add_user_connection_info(self, pubkey, ip, port):
-        self.data["payout_info"] = {
-                'pubkey' : pubkey,
-                'ip' : ip,
-                'port' : port,
-                }
+    def add_payout_connection_data(self, payout_connection_data):
+        self.data["payout_connection_data"] = payout_connection_data
         self.data["status"] = self.Status.PAYMENT_READY
 
     # Step 3: Add payment information
-    def start_payment(self, payment_transaction_data):
+    def start_payment(self, payment_connection_data):
+        self.data["payment_connection_data"]  = payment_connection_data
+        self.data["payment_started_on"]       = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
+
+        self.data["status"]                   = self.Status.PAYMENT_PENDING
+
+    # Step 4.1: confirm_payment
+    def confirm_payment(self, payment_transaction_data):
         self.data["payment_transaction_data"] = payment_transaction_data
-        self.data["payment_started_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
+        self.data["payment_confirmed_on"]     = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
 
-        self.data["status"] = self.Status.PAYMENT_PENDING
+        self.data["status"]                   = self.Status.PAYMENT_DONE
 
-    # Step 4: confirm_payment
-    def confirm_payment(self, counterparty_account):
-        self.data["counterparty_account"] = counterparty_account
+    # Step 4.2: Finish payout
+    def payout_done(self, payout_transaction_data):
+        self.data["payout_transaction_data"] = payout_transaction_data
+        self.data["payout_done_on"]          = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
 
-        self.data["payment_confirmed_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
-
-        self.data["status"] = self.Status.PAYMENT_DONE
-
-    # Step 4: Finish payout
-    def payout_done(self, payout_transaction_id):
-        self.data["payout_done_on"] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S.%f")
-        self.data["payout_transaction_id"] = payout_transaction_id
-        self.data["status"] = self.Status.PAYOUT_DONE
+        self.data["status"]                  = self.Status.PAYOUT_DONE
 
     def get(self, key, default=None):
         if key in self.data:

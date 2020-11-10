@@ -13,7 +13,12 @@ from binascii import hexlify, unhexlify
 
 INITIAL_BALANCE = 100
 
-class MyTrustChainBlock(TrustChainBlock):
+class EuroTokenBlockOld(TrustChainBlock):
+
+    def __init__(self, *args, **kwargs):
+        super(EuroTokenBlockOld, self).__init__(*args, **kwargs)
+        self.balance = 100
+        self.amount = self.transaction["amount"]
 
     def __str__(self):
         # This makes debugging and logging easier
@@ -29,7 +34,7 @@ class MyTrustChainBlock(TrustChainBlock):
                 trans,
                 self.type)
 
-        def get_block_balance(self, database):
+        def balance(self, database):
             if self.transaction['sender'] == self.public_key:
                 return self.transaction['balance']
             else:
@@ -101,20 +106,38 @@ class MyTrustChainBlock(TrustChainBlock):
             return ValidationResult.invalid, ["Insufficient funds"]
         return ValidationResult.valid, []
 
-class MyBlockListener(BlockListener):
+class EuroTokenDestructionBlock(TrustChainBlock):
+
+    def __init__(self, *args, **kwargs):
+        super(EuroTokenDestructionBlock, self).__init__(*args, **kwargs)
+        self.balance = 100
+        # self.amount = self.transaction["amount"]
+
+class EuroTokenDestructionBlockListener(BlockListener):
     def __init__(self, my_peer, community):
         self.my_peer = my_peer
         self.community = community
 
-    BLOCK_CLASS = MyTrustChainBlock
+    BLOCK_CLASS = EuroTokenDestructionBlock
 
     def should_sign(self, block):
-        self.community.balance += block.transaction["amount"]
-        # print(self.my_peer, self.community.balance)
+        print("should_sign")
+        if block.balance < 0: # TODO expand to the full range of validation: checkpoints included
+            return False
         return True
 
     def received_block(self, block):
-        pass
+        print(block.public_key)
+        self.community.eurotoken_blockchain.on_payment(
+                block.transaction["payment_id"],
+                block.transaction["amount"],
+                "temp")
+
+# class EuroTokenBlockListenerFail(BlockListener):
+#     BLOCK_CLASS = EuroTokenBlock
+
+#     def should_sign(self, block):
+#         return False
 
 class MyTrustChainCommunity(TrustChainCommunity):
 
@@ -122,8 +145,12 @@ class MyTrustChainCommunity(TrustChainCommunity):
 
     def __init__(self, *args, **kwargs):
         super(MyTrustChainCommunity, self).__init__(*args, **kwargs)
-        self.add_listener(MyBlockListener(self.my_peer, self), [b'transfer'])
-        self.balance = INITIAL_BALANCE
+        self.add_listener(EuroTokenDestructionBlockListener(self.my_peer, self), [b'eurotoken_destruction'])
+        # self.add_listener(EuroTokenBlockListenerFail(self.my_peer, self), [b'eurotoken_transfer']) # we dont accept transfers
+        # self.balance = INITIAL_BALANCE
+
+    def set_callback_instance(self, eurotoken_blockchain):
+        self.eurotoken_blockchain = eurotoken_blockchain
 
     def started(self):
         # pass
@@ -142,7 +169,7 @@ class MyTrustChainCommunity(TrustChainCommunity):
         return self.send_transaction_to_peer(peer, amount)
 
     def send_transaction_to_peer(self, peer, amount):
-        return self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=b'transfer', transaction={
+        return self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=b'eurotoken_creation', transaction={
             'amount': amount
             })
 

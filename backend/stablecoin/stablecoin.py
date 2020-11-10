@@ -65,12 +65,12 @@ class StablecoinInteractor(StableCoin):
         payout_amount=self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
 
         payout_provider = self.provider_map["blockchain"]
-        connection_info = payout_provider.get_connection_info()
+        gateway_connection_data = payout_provider.get_connection_info()
 
         transaction = Transaction(
                 payment_provider="bank", payment_currency="euro",
                 payout_provider="blockchain", payout_currency="eurotoken",
-                connection_info=connection_info,
+                gateway_connection_data=gateway_connection_data,
                 amount=collatoral_amount_cent, payout_amount=payout_amount
                 )
 
@@ -87,16 +87,19 @@ class StablecoinInteractor(StableCoin):
             print("no transaction found for id " + payment_id)
             return None
 
-        if transaction["status"] not in [Transaction.Status.CREATED, Transaction.Status.PAYMENT_PENDING]:
-            print("connect: Transaction in wrong state for id " + payment_id, transaction["status"])
+        if transaction["status"] not in [Transaction.Status.CREATED, Transaction.Status.PAYMENT_READY]:
+            print("create_connect: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
-        transaction.add_user_connection_info(pubkey, ip, port)
+        transaction.add_payout_connection_data(payout_connection_data={
+            'pubkey' : pubkey,
+            'ip'     : ip,
+            'port'   : port,
+            })
 
         self.persistence.update_transaction(transaction)
 
-        # Steps for skipping payment and going directly to send
-        # self.CREATE_connect(transaction["payment_id"], "kek", "sdf", 4)
+        # Steps for skipping payment and going directly to send (for testing trustchain transactions)
         # self.CREATE_start_payment(transaction["payment_id"])
         # return self.CREATE_finish_payment(transaction["payment_id"])
 
@@ -113,14 +116,14 @@ class StablecoinInteractor(StableCoin):
             return None
 
         if transaction["status"] != Transaction.Status.PAYMENT_READY:
-            print("start_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
+            print("create_start_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
         payment_transaction_link = payment_provider.create_payment_request(transaction["amount"])
 
         transaction.start_payment(
-                payment_transaction_data=payment_transaction_link
+                payment_connection_data=payment_transaction_link
                 )
 
         self.persistence.update_transaction(transaction)
@@ -128,7 +131,7 @@ class StablecoinInteractor(StableCoin):
         return transaction
 
     # Step 4 -> triggers_payout
-    async def CREATE_finish_payment(self, payment_id):
+    def CREATE_finish_payment(self, payment_id):
         "Pays out tokens to pubkey@ip:port"
 
         transaction = self.persistence.get_payment_by_id(payment_id)
@@ -138,26 +141,26 @@ class StablecoinInteractor(StableCoin):
             return None
 
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
-            print("start_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
+            print("create_finish_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
 
         # TODO: remove
-        payment_provider.payment_done_trigger(transaction["payment_transaction_data"], "IBAN")
+        payment_provider.payment_done_trigger(transaction["payment_connection_data"], "IBAN")
 
-        payment_counterparty = payment_provider.attempt_payment_done(transaction["payment_transaction_data"])
+        payment_counterparty = payment_provider.attempt_payment_done(transaction["payment_connection_data"])
 
         if payment_counterparty:
-            transaction.confirm_payment(payment_counterparty)
+            transaction.confirm_payment(payment_transaction_data=payment_counterparty)
 
             payout_provider = self.provider_map[transaction["payout_provider"]]
-            payout_id = await payout_provider.initiate_payment(
-                    transaction["payout_info"],
+            payout_id = payout_provider.initiate_payment(
+                    transaction["payout_connection_data"],
                     transaction["payout_amount"])
-            print(payout_id)
-            if payout_id:
-                transaction.payout_done(payout_id)
+            print(payout_id) # TODO: get block id here, query db for latest block (try to make this safe)
+            # if payout_id:
+            transaction.payout_done("ID NOT IMPLEMENTED")
 
         self.persistence.update_transaction(transaction)
 
@@ -172,23 +175,21 @@ class StablecoinInteractor(StableCoin):
         "Registers payment in the DB"
         "Returns gateway key, ip and port, as well as a payment id"
 
-        payout_amount = self.get_exchange_rate_tok_to_col(token_amount_cent)
+        payout_amount = self.get_exchange_rate_tok_to_col(amount)
 
-        payout_provider = self.provider_map[transaction["payout_provider"]]
-        connection_info = payout_provider.get_connection_info()
+        payout_provider = self.provider_map["blockchain"]
+        gateway_connection_data = payout_provider.get_connection_info()
 
         transaction = Transaction(
                 payment_provider="blockchain", payment_currency="eurotoken",
                 payout_provider="bank", payout_currency="euro",
-                connection_info=connection_info,
-                payout_account=iban,
-                amount=token_amount_cent, payout_amount=payout_amount
+                gateway_connection_data=gateway_connection_data,
+                payout_connection_data=iban,
+                amount=amount, payout_amount=payout_amount
                 )
 
-        payment_transaction_data = copy(connection_info)
-
         transaction.start_payment(
-                payment_transaction_data=payment_transaction_data
+                payment_connection_data=gateway_connection_data
                 )
 
         self.persistence.create_transaction(transaction)
@@ -196,34 +197,37 @@ class StablecoinInteractor(StableCoin):
         return transaction
 
     # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
-    def DESTROY_pay(self, payment_id, amount, ip, port):
+    def DESTROY_pay(self, payment_id, amount, pubkey):
         transaction = self.persistence.get_payment_by_id(payment_id)
 
         if transaction is None:
             print("no transaction found for id " + payment_id)
-            return None
+            return False # TODO: Raise validation error
 
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
-            return None
+            print("destroy_pay: Transaction in wrong state for id " + payment_id, transaction["status"])
+            return False # TODO: Raise validation error
+
+        print("payment recieved")
 
         if transaction["amount"] != amount:
             "Incorrect amount"
             print("incorrect amount transfered, reject block") #TODO: Make sure trustchain asks this function for validation
-            return False
+            return False # TODO: Raise validation error
 
-        transaction.confirm_payment(payment_counterparty) #TODO payment_counterparty
+        transaction.confirm_payment(payment_transaction_data=pubkey)
 
         payout_provider = self.provider_map[transaction["payout_provider"]]
         payout_id = payout_provider.initiate_payment(
-                transaction["payout_info"],
+                transaction["payout_connection_data"],
                 transaction["payout_amount"])
 
-        if payout_id:
-            transaction.payout_done(payout_id)
+        # if payout_id: #shouldn't fail
+        transaction.payout_done(payout_id)
 
         self.persistence.update_transaction(transaction)
 
-        return transaction
+        return transaction # TODO: Return or raise what ipv8 expects
 
     "Other"
 

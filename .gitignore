@@ -12,3 +12,5 @@ frontend/selenium-debug.log
 frontend/.netlify
 frontend/.*.dockerfile
 frontend/.vs
+Pipfile.lock
+Pipfile
