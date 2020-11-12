@@ -121,17 +121,41 @@ class EuroTokenDestructionBlockListener(BlockListener):
     BLOCK_CLASS = EuroTokenDestructionBlock
 
     def should_sign(self, block):
-        print("should_sign")
+        # print("should_sign")
         if block.balance < 0: # TODO expand to the full range of validation: checkpoints included
             return False
         return True
 
     def received_block(self, block):
-        print(block.public_key)
+        # print(block.public_key)
         self.community.eurotoken_blockchain.on_payment(
                 block.transaction["payment_id"],
                 block.transaction["amount"],
                 "temp")
+
+class EuroTokenCheckpointBlockListener(BlockListener):
+    def __init__(self, my_peer, community):
+        self.my_peer = my_peer
+        self.community = community
+
+    BLOCK_CLASS = EuroTokenDestructionBlock
+
+    def balance_before_block(self, block):
+        "returns the balance of the block by calculating back to the last checkpoint"
+        return 0
+
+    def should_sign(self, block):
+        # print("should_sign")
+        # Val
+        # Accept iff:
+        #   - all blocks are available and valid (down to last checkpoint) (do recursively)
+        #   - the "unverified balance" after the current block >= 0
+        #   - the "verified balance" before the current block >= transaction amount
+        return True
+
+    def received_block(self, block):
+        print(block.public_key)
+        pass
 
 # class EuroTokenBlockListenerFail(BlockListener):
 #     BLOCK_CLASS = EuroTokenBlock
@@ -146,6 +170,7 @@ class MyTrustChainCommunity(TrustChainCommunity):
     def __init__(self, *args, **kwargs):
         super(MyTrustChainCommunity, self).__init__(*args, **kwargs)
         self.add_listener(EuroTokenDestructionBlockListener(self.my_peer, self), [b'eurotoken_destruction'])
+        self.add_listener(EuroTokenCheckpointBlockListener(self.my_peer, self), [b'eurotoken_checkpoint'])
         # self.add_listener(EuroTokenBlockListenerFail(self.my_peer, self), [b'eurotoken_transfer']) # we dont accept transfers
         # self.balance = INITIAL_BALANCE
 
@@ -190,7 +215,7 @@ class EuroTokenCommunity(Community):
         self.add_message_handler(1, self.on_message)
 
     def set_callback_instance(self, eurotoken_blockchain):
-        print("set eb")
+        # print("set eb")
         self.eurotoken_blockchain = eurotoken_blockchain
 
     def started(self):
