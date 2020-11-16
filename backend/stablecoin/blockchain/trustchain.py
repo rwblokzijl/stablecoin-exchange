@@ -1,8 +1,9 @@
-from stablecoin.bank.payment_system import PaymentSystem
-from dataclasses                    import dataclass
-from enum                           import Enum
-from stablecoin.blockchain.ipv8     import MyTrustChainCommunity, EuroTokenCommunity
-from datetime                       import datetime
+from stablecoin.bank.payment_system                  import PaymentSystem
+from dataclasses                                     import dataclass
+from enum                                            import Enum
+from stablecoin.blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
+from stablecoin.blockchain.ipv8.trustchain.community import MyTrustChainCommunity
+from datetime                                        import datetime
 
 from binascii import hexlify, unhexlify
 import base64
@@ -63,7 +64,7 @@ class TrustChain(PaymentSystem):
 
     "Step 2: Start the payout"
     #TODO return block id
-    def initiate_payment(self, account, amount):
+    def initiate_payment(self, account, amount, payment_id):
         "Returns transaction_id if successful"
 
         public_key = account["pubkey"]
@@ -74,7 +75,7 @@ class TrustChain(PaymentSystem):
 
         # transaction_id = self.get_new_id()
 
-        return self.trustchain.send_money(amount, public_key, ip, port)
+        return self.trustchain.send_money(amount, public_key, ip, port, payment_id)
 
     "Bookkeeping functions"
 

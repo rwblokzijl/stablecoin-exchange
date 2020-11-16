@@ -74,7 +74,7 @@ class BankStub(Bank):
             print("No such transaction")
             return None
 
-    def initiate_payment(self, account, amount):
+    def initiate_payment(self, account, amount, payment_id):
         "Returns transaction_id if successful"
         now = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 

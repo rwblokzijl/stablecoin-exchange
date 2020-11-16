@@ -157,7 +157,7 @@ class StablecoinInteractor(StableCoin):
             payout_provider = self.provider_map[transaction["payout_provider"]]
             payout_id = payout_provider.initiate_payment(
                     transaction["payout_connection_data"],
-                    transaction["payout_amount"])
+                    transaction["payout_amount"], payment_id)
             print(payout_id) # TODO: get block id here, query db for latest block (try to make this safe)
             # if payout_id:
             transaction.payout_done("ID NOT IMPLEMENTED")
@@ -220,7 +220,7 @@ class StablecoinInteractor(StableCoin):
         payout_provider = self.provider_map[transaction["payout_provider"]]
         payout_id = payout_provider.initiate_payment(
                 transaction["payout_connection_data"],
-                transaction["payout_amount"])
+                transaction["payout_amount"], payment_id)
 
         # if payout_id: #shouldn't fail
         transaction.payout_done(payout_id)

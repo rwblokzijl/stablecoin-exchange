@@ -9,7 +9,8 @@ from stablecoin.blockchain.trustchain import TrustChain
 from stablecoin.bank.bankstub                   import BankStub
 from stablecoin.blockchain.chainstub            import ChainStub
 from stablecoin.persistence.inmemorypersistence import InMemoryPersistence
-from stablecoin.blockchain.ipv8                 import MyTrustChainCommunity, EuroTokenCommunity
+from stablecoin.blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
+from stablecoin.blockchain.ipv8.trustchain.community import MyTrustChainCommunity
 
 from stablecoin.ui.rest import MyRESTManager
 
