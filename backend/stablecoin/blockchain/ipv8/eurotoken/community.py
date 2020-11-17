@@ -29,6 +29,7 @@ class EuroTokenCommunity(Community):
 
     @lazy_wrapper(GatewayConnectMessage)
     def on_message(self, peer, payload):
+        print("GOT CONNECT")
         payment_id = payload.payment_id.decode('utf-8')
         pubkey = peer.public_key.key_to_bin().hex()
 

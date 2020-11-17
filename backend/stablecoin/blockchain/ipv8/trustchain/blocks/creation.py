@@ -6,7 +6,7 @@ class EuroTokenCreationBlock(EuroTokenBlock):
         # self.amount = self.transaction["amount"]
 
     def validate_transaction(self, database):
-        result, errors =  super(EuroTokenDestructionBlock, self).validate_transaction(*args, **kwargs)
+        result, errors =  super(EuroTokenCreationBlock, self).validate_transaction(database)
 
         if "amount" not in self.transaction:
             result = ValidationResult.invalid

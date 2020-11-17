@@ -7,6 +7,8 @@ from stablecoin.blockchain.ipv8.trustchain.blocks.creation    import EuroTokenCr
 from stablecoin.blockchain.ipv8.trustchain.blocks.destruction import EuroTokenDestructionBlockListener
 from stablecoin.blockchain.ipv8.trustchain.blocks.transfer    import EuroTokenTransferBlockListener
 
+from stablecoin.blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change
+
 class MyTrustChainCommunity(TrustChainCommunity):
 
     # master_peer = Peer(ECCrypto().generate_key(u"curve25519"))
@@ -38,15 +40,15 @@ class MyTrustChainCommunity(TrustChainCommunity):
         return self.send_transaction_to_peer(peer, amount, payment_id)
 
     def get_known_balance_for_peer(self, peer):
-        latest = get_latest_blocks(self, peer.public_key, limit=1, block_types=[ self.BlockTypes.CHECKPOINT,
-            self.BlockTypes.CREATION, self.BlockTypes.DESTRUCTION, self.BlockTypes.TRANSFER ])
+        key = b"LibNaCLPK:" + peer.public_key.key_to_bin().hex().encode('utf-8')
+        latest = self.persistence.get_latest_blocks(key, limit=1, block_types=self.BlockTypes.EUROTOKEN_TYPES)
         if len(latest)==1:
-            return latest[0].transaction['balance']
+            return get_balance_for_block(latest[0], self.persistence)
         else:
             return 0
 
     def send_transaction_to_peer(self, peer, amount, payment_id):
-        balance = self.get_known_balance_for_peer(self, peer)
+        balance = self.get_known_balance_for_peer(peer)
         return self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=self.BlockTypes.CREATION, transaction={
             'amount': amount,
             'balance': balance,
@@ -58,5 +60,7 @@ class MyTrustChainCommunity(TrustChainCommunity):
         CHECKPOINT  = b'eurotoken_checkpoint'
         CREATION    = b'eurotoken_creation'
         TRANSFER    = b'eurotoken_transfer'
+
+        EUROTOKEN_TYPES=[ CHECKPOINT, CREATION, DESTRUCTION, TRANSFER ]
 
 

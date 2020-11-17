@@ -1,6 +1,8 @@
 from ipv8.attestation.trustchain.block     import TrustChainBlock, ValidationResult
 from ipv8.attestation.trustchain.listener  import BlockListener
 
+from stablecoin.blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change
+
 from binascii import hexlify, unhexlify
 
 class EuroTokenBlock(TrustChainBlock):
@@ -9,9 +11,19 @@ class EuroTokenBlock(TrustChainBlock):
         # self.balance = self.transaction["balance"]
 
     def validate_transaction(self, database):
+        print("validating")
+        result, errors =  ValidationResult.valid, []
         if "balance" not in self.transaction:
             result = ValidationResult.invalid
             errors += ['balance missing from transaction']
+
+        balanceBefore = get_balance_for_block(database.get_block_before(self), database)
+        if self.transaction["balance"] != balanceBefore + get_block_balance_change(self):
+            result = ValidationResult.invalid
+            errors += [f'block balance: {self.transaction["balance"]} does not match calculated balance: {balanceBefore} ']
+
+        if result != ValidationResult.valid:
+            return result, errors
 
         return ValidationResult.valid, []
 
@@ -115,5 +127,5 @@ class EuroTokenBlockListener(BlockListener):
         return True
 
     def received_block(self, block):
-        pass
+        print("GOT BLOCK")
 
