@@ -9,7 +9,7 @@ class EuroTokenTransferBlock(EuroTokenBlock):
     def validate_transaction(self, database):
         result, errors =  super(EuroTokenTransferBlock, self).validate_transaction(database)
 
-        if "amount" not in self.transaction["amount"]:
+        if "amount" not in self.transaction:
             return ValidationResult.invalid, errors + ['amount missing from transaction']
 
         if result != ValidationResult.valid:

@@ -11,16 +11,34 @@ class EuroTokenBlock(TrustChainBlock):
         # self.balance = self.transaction["balance"]
 
     def validate_transaction(self, database):
+        return self.validate_balance(database)
+
+    def validate_acceptance(self, database):
+        result, errors =  ValidationResult.valid, []
+        if self.isAgreement():
+            if database.get_linked(self).transaction != self.transaction:
+                return False
+                # result = ValidationResult.invalid
+                # errors += ['balance missing from transaction']
+        # return result, errors
+        return True
+
+
+    def validate_balance(self, database):
         print("validating")
         result, errors =  ValidationResult.valid, []
         if "balance" not in self.transaction:
             result = ValidationResult.invalid
             errors += ['balance missing from transaction']
 
+        if result != ValidationResult.valid:
+            return result, errors
+
         balanceBefore = get_balance_for_block(database.get_block_before(self), database)
-        if self.transaction["balance"] != balanceBefore + get_block_balance_change(self):
+        balanceChange = get_block_balance_change(self)
+        if self.transaction["balance"] != balanceBefore + balanceChange:
             result = ValidationResult.invalid
-            errors += [f'block balance: {self.transaction["balance"]} does not match calculated balance: {balanceBefore} ']
+            errors += [f'block balance: {self.transaction["balance"]} does not match calculated balance: {balanceBefore} + {balanceChange} ']
 
         if result != ValidationResult.valid:
             return result, errors

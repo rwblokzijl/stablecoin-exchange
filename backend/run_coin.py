@@ -27,9 +27,14 @@ async def start_communities(args):
     rest_port = 8000
     ipv8_port = 8090
     if args:
-        address = args[0]
+        address = args[0].strip()
+        if len(args) > 1:
+            global_address = args[1].strip()
+        else:
+            global_address = address
     else:
-        address = '127.0.0.1'
+        global_address = address = '127.0.0.1'
+    print(f"Address: {address}")
     configuration = get_default_configuration()
     configuration['address'] = address
     configuration['port'] = ipv8_port
@@ -72,7 +77,7 @@ async def start_communities(args):
 
     ipv8 = IPv8(configuration, extra_communities={'MyTrustChainCommunity': MyTrustChainCommunity, 'EuroTokenCommunity': EuroTokenCommunity})
     await ipv8.start()
-    interactor = buildSI(ipv8, address, ipv8_port)
+    interactor = buildSI(ipv8, global_address, ipv8_port)
     rest_manager = MyRESTManager(interactor)
     await rest_manager.start(rest_port)
 

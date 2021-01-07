@@ -67,6 +67,8 @@ class TrustChain(PaymentSystem):
     def initiate_payment(self, account, amount, payment_id):
         "Returns transaction_id if successful"
 
+        print(account)
+
         public_key = account["pubkey"]
         ip = account["ip"]
         port = account["port"]

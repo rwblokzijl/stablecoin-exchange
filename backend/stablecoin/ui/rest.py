@@ -133,8 +133,6 @@ class APIEndpoint(BaseEndpoint):
 
         transaction = self.stablecoin_interactor.CREATE_finish_payment(payment_id)
 
-        print("wtf")
-
         if not transaction:
             raise web.HTTPNotFound(reason="Transaction not found")
 
