@@ -61,6 +61,8 @@ class TrustChain(PaymentSystem):
         return self.stablecoin.DESTROY_pay(payment_id, amount, user_pk)
 
     "Payout side"
+    def attempt_payment_done(self, payment_id):
+        pass
 
     "Step 2: Start the payout"
     #TODO return block id

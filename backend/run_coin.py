@@ -6,7 +6,7 @@ from stablecoin.stablecoin import StablecoinInteractor
 from stablecoin.blockchain.trustchain import TrustChain
 # from stablecoin.persistence.database  import Database
 
-from stablecoin.bank.bankstub                   import BankStub
+from stablecoin.bank.tikkie                     import Tikkie
 from stablecoin.blockchain.chainstub            import ChainStub
 from stablecoin.persistence.inmemorypersistence import InMemoryPersistence
 from stablecoin.blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
@@ -82,7 +82,7 @@ async def start_communities(args):
     await rest_manager.start(rest_port)
 
 def buildSI(ipv8, address, ipv8_port):
-    bank        = BankStub()
+    bank        = Tikkie(production=False, abn_api_path='~/.ssh/abn_stablecoin_key', sandbox_key_path='~/.ssh/tikkie_key_sandbox')
     blockchain  = TrustChain(identity="pubkey0123456789abcdef", ipv8=ipv8, address=(address, ipv8_port) )
     persistence = InMemoryPersistence()
 

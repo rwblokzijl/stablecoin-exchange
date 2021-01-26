@@ -4,7 +4,6 @@ from ipv8.attestation.trustchain.block                 import ValidationResult
 class EuroTokenCreationBlock(EuroTokenBlock):
     def __init__(self, *args, **kwargs):
         super(EuroTokenCreationBlock, self).__init__(*args, **kwargs)
-        # self.amount = self.transaction["amount"]
 
     def validate_transaction(self, database):
         # DO NOT CHECK BALANCE FOR CREATE, GATEWAYS DONT KNOW WHERE THE RECIEVERS CHAIN IS
@@ -26,3 +25,6 @@ class EuroTokenCreationBlock(EuroTokenBlock):
 
 class EuroTokenCreationBlockListener(EuroTokenBlockListener):
     BLOCK_CLASS = EuroTokenCreationBlock
+
+    def received_block(self, block):
+        print("GOT CREATION!!!")

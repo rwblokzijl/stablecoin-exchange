@@ -25,7 +25,12 @@ class PaymentSystem(ABC):
 
     "Payout End"
 
-    "Step 2: Start the payout"
+    "Step 4: Validate the request"
+    @abstractmethod
+    def attempt_payment_done(self):
+        pass
+
+    "Step 4: Start the payout"
     @abstractmethod
     def initiate_payment(self, account, amount):
         "Returns true if succesful"

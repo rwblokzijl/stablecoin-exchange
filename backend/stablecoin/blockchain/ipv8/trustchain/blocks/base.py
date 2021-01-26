@@ -145,5 +145,5 @@ class EuroTokenBlockListener(BlockListener):
         return True
 
     def received_block(self, block):
-        print("GOT BLOCK")
+        print("GOT A BLOCK")
 

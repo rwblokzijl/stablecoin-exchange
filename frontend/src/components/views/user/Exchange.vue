@@ -139,7 +139,8 @@
                 <modal v-if="payment.payout_currency === 'eurotoken'" :name="payment.payment_id">
                   {{payment.status}}
                   <p v-if="payment.status === 0">
-                  <!-- {{CREATE_get_connection_data(payment)}} -->
+                  {{CREATE_get_connection_data(payment)}} <br>
+                  <!-- {{payment.payment_transaction_data}} -->
                   <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
                   </p>
                   <p v-else-if="payment.status === 1">
@@ -147,7 +148,7 @@
                   </p>
                   <p v-else-if="payment.status === 2">
                     <!-- {{payment}} -->
-                    {{payment.payment_transaction_data}}
+                    {{payment.payment_connection_data}}
                     <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
                   </p>
                   <p v-else-if="payment.status === 3">
@@ -492,4 +493,7 @@ export default {
 .fullCanvas {
   width: 100%;
 }
+
+p { word-break: break-all }
+
 </style>

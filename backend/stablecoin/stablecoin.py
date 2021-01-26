@@ -16,7 +16,8 @@ import copy
 class Response(ABC):
     pass
 
-class StableCoin(ABC):
+class StablecoinInteractor:
+
     def __init__(self, bank, persistence, blockchain):
         self.bank        = bank
         self.persistence = persistence
@@ -27,24 +28,6 @@ class StableCoin(ABC):
                 "bank" : self.bank,
                 "blockchain" : self.blockchain
                 }
-
-    @abstractmethod
-    def initiate_creation(self):
-        pass
-
-    @abstractmethod
-    def initiate_destruction(self, collatoral_amount_cent, destination_account):
-        pass
-
-    @abstractmethod
-    def transaction_status(self, transaction_id):
-        pass
-
-    @abstractmethod
-    def attempt_finish_creation_payment(self, transaction_id) -> Response:
-        pass
-
-class StablecoinInteractor(StableCoin):
 
     # Creation interface
     # CREATE_initiate # Step 1 -> returns info to connect to gateway over ipv8
@@ -120,10 +103,10 @@ class StablecoinInteractor(StableCoin):
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
-        payment_transaction_link = payment_provider.create_payment_request(transaction["amount"])
+        payment_transaction_data = payment_provider.create_payment_request(transaction["amount"], payment_id)
 
         transaction.start_payment(
-                payment_connection_data=payment_transaction_link
+                payment_connection_data=payment_transaction_data
                 )
 
         self.persistence.update_transaction(transaction)
@@ -132,6 +115,7 @@ class StablecoinInteractor(StableCoin):
 
     # Step 4 -> triggers_payout
     def CREATE_finish_payment(self, payment_id):
+        "Will be called when"
         "Pays out tokens to pubkey@ip:port"
 
         transaction = self.persistence.get_payment_by_id(payment_id)
@@ -146,10 +130,10 @@ class StablecoinInteractor(StableCoin):
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
 
-        # TODO: remove
-        payment_provider.payment_done_trigger(transaction["payment_connection_data"], "IBAN")
+        # # TODO: remove
+        # payment_provider.payment_done_trigger(transaction["payment_connection_data"], "IBAN")
 
-        payment_counterparty = payment_provider.attempt_payment_done(transaction["payment_connection_data"])
+        payment_counterparty = payment_provider.attempt_payment_done(transaction["payment_connection_data"]['payment_id'])
 
         if payment_counterparty:
             transaction.confirm_payment(payment_transaction_data=payment_counterparty)
@@ -162,12 +146,12 @@ class StablecoinInteractor(StableCoin):
             # if payout_id:
             transaction.payout_done("ID NOT IMPLEMENTED")
 
-        def when_finished(fut):
-            print("Delivery: ", fut.result())
+            def when_finished(fut):
+                print("Delivery: ", fut.result())
 
-        payout_id.add_done_callback(when_finished)
+            payout_id.add_done_callback(when_finished)
 
-        self.persistence.update_transaction(transaction)
+            self.persistence.update_transaction(transaction)
 
         return transaction
 
@@ -265,97 +249,6 @@ class StablecoinInteractor(StableCoin):
         if not type(token_amount_cent) == int:
             raise self.VerificationError("Token cent amount must be an Integer")
         return math.floor(token_amount_cent * 0.99)
-
-    "OLD"
-
-    "1. Creation (Status -> PAYMENT_PENDING)"
-    def initiate_creation(self, collatoral_amount_cent, destination_wallet, temp_counterparty=None):
-        payout_amount=self.get_exchange_rate_col_to_tok(collatoral_amount_cent)
-
-        transaction = Transaction(
-                payment_provider="bank", payment_currency="euro",
-                payout_provider="blockchain", payout_currency="eurotoken",
-                payout_account=destination_wallet,
-                amount=collatoral_amount_cent, payout_amount=payout_amount
-                )
-
-        payment_provider = self.provider_map[transaction["payment_provider"]]
-        payment_transaction_id = payment_provider.create_payment_request(collatoral_amount_cent)
-
-        transaction.start_payment(
-                payment_transaction_id=payment_transaction_id,
-                expected_payment_account=None,
-                temp_counterparty=temp_counterparty
-                )
-
-        self.persistence.create_transaction(transaction)
-
-        return transaction.get_data()
-
-    "1. Destruction (Status -> PAYMENT_PENDING)"
-    def initiate_destruction(self, token_amount_cent, destination_iban, temp_counterparty=None):
-        payout_amount = self.get_exchange_rate_tok_to_col(token_amount_cent)
-
-        transaction = Transaction(
-                payment_provider="blockchain", payment_currency="eurotoken",
-                payout_provider="bank", payout_currency="euro",
-                payout_account=destination_iban,
-                amount=token_amount_cent, payout_amount=payout_amount
-                )
-
-        payment_provider = self.provider_map[transaction["payment_provider"]]
-        chain_transaction_id = payment_provider.create_payment_request(token_amount_cent)
-
-        transaction.start_payment(
-                payment_transaction_id=chain_transaction_id,
-                expected_payment_account=None,
-                temp_counterparty=temp_counterparty
-                )
-
-        self.persistence.create_transaction(transaction)
-
-        return transaction.get_data()
-
-    "2. Payment done, Entry point for all outgoing payments (Status -> PAYMENT_DONE)"
-    def complete_payment(self, payment_id, counterparty):
-        transaction = self.persistence.get_payment_by_id(payment_id)
-
-        if transaction is None:
-            print("no transaction found for id " + payment_id)
-            return None
-
-        if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
-            return True
-
-        payment_provider = self.provider_map[transaction["payment_provider"]]
-
-        ans = payment_provider.payment_done_trigger(transaction["payment_transaction_id"], counterparty)
-        if ans:
-            transaction.confirm_payment(counterparty)
-            self.persistence.update_transaction(transaction)
-        return ans
-
-    def attempt_finish_creation_payment(self, transaction):
-        if transaction["status"] != transaction.Status.PAYMENT_DONE:
-            return None
-        payout_provider = self.provider_map[transaction["payout_provider"]]
-
-        payout_transaction_id = payout_provider.initiate_payment(transaction["payout_account"], transaction["payout_amount"])
-
-        transaction.payout_done(payout_transaction_id)
-        self.persistence.update_transaction(transaction)
-        return transaction
-
-    "Status and check completion trigger"
-    def transaction_status(self, transaction_id):
-        transaction = copy.copy(self.persistence.get_payment_by_id(transaction_id))
-
-        if not transaction:
-            return None
-
-        self.attempt_finish_creation_payment(transaction)
-
-        return transaction.get_data()
 
     class VerificationError(Exception):
         pass

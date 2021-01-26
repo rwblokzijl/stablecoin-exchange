@@ -1,6 +1,7 @@
 from ipv8.attestation.trustchain.community import TrustChainCommunity
 from ipv8.keyvault.crypto                  import ECCrypto
 from ipv8.peer                             import Peer
+from ipv8.lazy_community                   import lazy_wrapper
 
 from stablecoin.blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
@@ -23,6 +24,8 @@ class MyTrustChainCommunity(TrustChainCommunity):
         self.add_listener(EuroTokenCreationBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.CREATION])
         self.add_listener(EuroTokenDestructionBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.DESTRUCTION])
         self.add_listener(EuroTokenTransferBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.TRANSFER])
+
+        # self.eurotoken_blockchain.on_user_connection(payment_id, pubkey, peer.address[0], peer.address[1])
 
     def set_callback_instance(self, eurotoken_blockchain):
         self.eurotoken_blockchain = eurotoken_blockchain
