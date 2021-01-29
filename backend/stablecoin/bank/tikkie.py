@@ -51,7 +51,27 @@ class Tikkie(Bank):
         x = requests.post(url, headers=self.get_headers(), json=data)
         return x
 
-    def __init__(self, abn_api_path, sandbox_key_path, production=False, production_key_path=None):
+    def get_post_callback_routes(self):
+        return {self.url : self.callback}
+
+    def get_post_callback_url(self):
+        return self.global_url + self.url
+
+    def callback(self, post_json):
+        print(post_json)
+        return {}
+
+    def register_payment_listener(self):
+        url = self.get_url('paymentrequestssubscription')
+        data = {
+                "url": self.get_post_callback_url()
+                }
+        x = requests.post(url, headers=self.get_headers(), json=data)
+        print(self.get_post_callback_url())
+        print(x.json())
+        return x
+
+    def __init__(self, abn_api_path, sandbox_key_path, global_url, url="/api/exchange/e2t/tikkie_callback", production=False, production_key_path=None):
         if production and not production_key_path:
             raise
 
@@ -59,6 +79,8 @@ class Tikkie(Bank):
         self.sandbox_key_path    = sandbox_key_path
         self.production_key_path = production_key_path
         self.abn_api_path        = abn_api_path
+        self.url                 = url
+        self.global_url          = global_url
 
         self.abn_api_key        = self.get_key(abn_api_path)
         if self.production:
@@ -67,6 +89,7 @@ class Tikkie(Bank):
                 raise
         else:
             self.sandbox_key    = self.get_key(sandbox_key_path) or self.generate_new_sandbox_key()
+        self.register_payment_listener()
 
     def generate_new_sandbox_key(self):
         url = self.get_url("sandboxapps")

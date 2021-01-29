@@ -22,12 +22,17 @@ class StablecoinInteractor:
         self.bank        = bank
         self.persistence = persistence
         self.blockchain  = blockchain
+
         self.blockchain.set_callback_instance(self)
+        self.bank.set_callback_instance(self)
 
         self.provider_map = {
                 "bank" : self.bank,
                 "blockchain" : self.blockchain
                 }
+
+    def get_additional_post_routes(self):
+        return self.bank.get_post_callback_routes()
 
     # Creation interface
     # CREATE_initiate # Step 1 -> returns info to connect to gateway over ipv8

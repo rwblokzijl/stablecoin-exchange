@@ -4,7 +4,11 @@ from pathlib import Path
 
 import unittest
 
-# allTests = False
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+
+from aiohttp import web
+
+allTests = False
 
 class TestTikkie(unittest.TestCase):
 
@@ -18,7 +22,7 @@ class TestTikkie(unittest.TestCase):
     def setUp(self):
         if self.skipclass:
             raise unittest.SkipTest("No api key found at " + self.abn_api_path)
-        self.tikkie = Tikkie(production=False, abn_api_path=self.abn_api_path, sandbox_key_path='~/.ssh/tikkie_key_sandbox')
+        self.tikkie = Tikkie(production=False, url="/", abn_api_path=self.abn_api_path, sandbox_key_path='~/.ssh/tikkie_key_sandbox')
 
     def tearDown(self):
         pass
@@ -74,4 +78,22 @@ class TestTikkie(unittest.TestCase):
         ans = self.tikkie.create_payment_request(123, "PAYID")
         status =  self.tikkie.payment_request_status(ans["payment_id"])
         print(status)
+
+class MyAppTestCase(AioHTTPTestCase):
+
+
+    async def get_application(self):
+        """
+        Override the get_app method to return your application.
+        """
+        import warnings
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        app = web.Application()
+        self.abn_api_path = '~/.ssh/abn_stablecoin_key'
+        self.tikkie = Tikkie(production=False, global_url="http://bagn.blokzijl.family", url="/api/exchange/e2t/tikkie_callback", abn_api_path=self.abn_api_path, sandbox_key_path='~/.ssh/tikkie_key_sandbox')
+
+    # @unittest_run_loop
+    # def test_register_listnener(self):
+    #     self.tikkie.register_payment_listener()
+    #     self.tikkie.create_request(10, "hi", "acb123")
 

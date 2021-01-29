@@ -149,6 +149,7 @@
                   <p v-else-if="payment.status === 2">
                     <!-- {{payment}} -->
                     {{payment.payment_connection_data}}
+                    <a target="_blank" :href="payment.payment_connection_data.url" class="">Pay tikkie</a>
                     <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
                   </p>
                   <p v-else-if="payment.status === 3">
