@@ -7,21 +7,21 @@ class Tikkie(Bank):
     def create_payment_request(self, amount, payment_id):
         "Returns payment destiation if successful"
 
-        ans = self.create_request(amount, "EuroToken Exchange", payment_id.replace("=", "_")).json()
-        return {v:ans[k] for k, v in { 'url': 'url', 'paymentRequestToken': 'payment_id' }.items()}
+        ans = self.create_request(amount=amount, description="EuroToken Exchange", referenceId=payment_id.replace("=", "_"))
+        return {v:ans[k] for k, v in { 'url': 'url', 'paymentRequestToken': 'payment_id'}.items()}
 
     def initiate_payment(self, account, amount):
         return None
 
-    def attempt_payment_done(self, payment_id):
-        status = self.payment_request_status(payment_id)
+    def attempt_payment_done(self, paymentRequestToken):
+        status = self.payment_request_status(paymentRequestToken)
         if status and status["numberOfPayments"] > 0:
-            return payment_id
+            return paymentRequestToken
         else:
             return None
 
-    def payment_request_status(self, payment_id):
-        url = self.get_url('paymentrequests') + f"/{payment_id}"
+    def payment_request_status(self, paymentRequestToken):
+        url = self.get_url('paymentrequests') + f"/{paymentRequestToken}"
         x = requests.get(url, headers=self.get_headers())
         return x.json()
 
@@ -49,7 +49,7 @@ class Tikkie(Bank):
                 "referenceId": referenceId #ID for the reference of the API consumer.
                 }
         x = requests.post(url, headers=self.get_headers(), json=data)
-        return x
+        return x.json()
 
     def get_post_callback_routes(self):
         return {self.url : self.callback}
@@ -58,8 +58,10 @@ class Tikkie(Bank):
         return self.global_url + self.url
 
     def callback(self, post_json):
-        print(post_json)
-        return {}
+        if post_json['notificationType'] == 'PAYMENT':
+            status = self.payment_request_status( post_json['paymentRequestToken'] )
+            payment_id = status['referenceId'].replace('_', '=')
+            self.stablecoin.CREATE_finish_payment(payment_id)
 
     def register_payment_listener(self):
         url = self.get_url('paymentrequestssubscription')
@@ -67,8 +69,6 @@ class Tikkie(Bank):
                 "url": self.get_post_callback_url()
                 }
         x = requests.post(url, headers=self.get_headers(), json=data)
-        print(self.get_post_callback_url())
-        print(x.json())
         return x
 
     def __init__(self, abn_api_path, sandbox_key_path, global_url, url="/api/exchange/e2t/tikkie_callback", production=False, production_key_path=None):

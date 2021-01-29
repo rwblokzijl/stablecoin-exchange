@@ -83,11 +83,11 @@ async def start_communities(args):
 
 def buildSI(ipv8, address, ipv8_port):
     bank = Tikkie(
-            production=True,
+            production=False,
             abn_api_path='~/.ssh/abn_stablecoin_key',
             sandbox_key_path='~/.ssh/tikkie_key_sandbox',
             production_key_path='~/.ssh/tikkie_key_prod',
-            global_url="http://bagn.blokzijl.family:8080",
+            global_url="http://bagn.blokzijl.family",
             url="/api/exchange/e2t/tikkie_callback")
 
     blockchain  = TrustChain(identity="pubkey0123456789abcdef", ipv8=ipv8, address=(address, ipv8_port) )

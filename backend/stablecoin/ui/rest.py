@@ -32,26 +32,26 @@ class APIEndpoint(BaseEndpoint):
     def initialize(self, session):
         super(APIEndpoint, self).initialize(session)#.blockchain.ipv8)
         self.stablecoin_interactor = session
-        # self.app.router._frozen = False
-        # self.app.add_routes(
-        #         self.parse_post_routes(
-        #             self.stablecoin_interactor.get_additional_post_routes()))
-        # self.app.router._frozen = True
+        self.app.router._frozen = False
+        self.app.add_routes(
+                self.parse_post_routes(
+                    self.stablecoin_interactor.get_additional_post_routes()))
+        self.app.router._frozen = True
         # self.trustchain = session.get_overlay(MyTrustChainCommunity)
 
-    # def parse_post_routes(self, route_dict):
-    #     def new_callback(callback):
-    #         async def fun(request):
-    #             return web.json_response(callback(await request.json()))
-    #         return fun
-    #     return [ web.post(url, new_callback(callback))
-    #             for url, callback in route_dict.items()]
+    def parse_post_routes(self, route_dict):
+        def new_callback(callback):
+            async def fun(request):
+                return web.json_response(callback(await request.json()))
+            return fun
+        return [ web.post(url, new_callback(callback))
+                for url, callback in route_dict.items()]
 
 
     def setup_routes(self):
         self.app.add_routes([
 
-            web.post( '/exchange/e2t/tikkie_callback',  self.tikkie_callback),
+            # web.post( '/exchange/e2t/tikkie_callback',  self.tikkie_callback),
 
             #"Creation"
             # Step 1 -> returns info to connect to gateway over ipv8
@@ -78,9 +78,9 @@ class APIEndpoint(BaseEndpoint):
             web.post( '/exchange/complete', self.complete_payment), #tested
         ])
 
-    async def tikkie_callback(self, request):
-        print(await request.json())
-        return web.json_response({})
+    # async def tikkie_callback(self, request):
+    #     print(await request.json())
+    #     return web.json_response({})
 
     def get_status_dict(self, t):
         transaction = self.clean_transaction_status(copy(t.data)) #copy

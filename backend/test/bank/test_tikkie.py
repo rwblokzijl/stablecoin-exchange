@@ -81,7 +81,6 @@ class TestTikkie(unittest.TestCase):
 
 class MyAppTestCase(AioHTTPTestCase):
 
-
     async def get_application(self):
         """
         Override the get_app method to return your application.
