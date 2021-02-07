@@ -9,9 +9,10 @@ class EuroTokenCommunity(Community):
     community_id = bytes.fromhex("f0eb36102436bd55c7a3cdca93dcaefb08df0750")
 
     def __init__(self, my_peer, endpoint, network):
-        super().__init__(my_peer, endpoint, network)
+        s = super().__init__(my_peer, endpoint, network)
         # Register the message handler for messages with the identifier "1".
         self.add_message_handler(1, self.on_message)
+        return s
 
     def set_callback_instance(self, eurotoken_blockchain):
         # print("set eb")

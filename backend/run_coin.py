@@ -44,7 +44,7 @@ async def start_communities(args):
         'file': f".keys/ec.pem"
         }]
     configuration['logger'] = {
-            'level': "WARNING",
+            'level': "INFO",
             }
     configuration['overlays'] = [{
         'class': 'MyTrustChainCommunity',

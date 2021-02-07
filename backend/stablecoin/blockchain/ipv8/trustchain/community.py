@@ -19,13 +19,17 @@ class MyTrustChainCommunity(TrustChainCommunity):
     # master_peer = Peer(ECCrypto().generate_key(u"curve25519"))
 
     def __init__(self, *args, **kwargs):
-        super(MyTrustChainCommunity, self).__init__(*args, **kwargs)
+        s = super(MyTrustChainCommunity, self).__init__(*args, **kwargs)
         self.add_listener(EuroTokenCheckpointBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.CHECKPOINT])
         self.add_listener(EuroTokenCreationBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.CREATION])
         self.add_listener(EuroTokenDestructionBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.DESTRUCTION])
         self.add_listener(EuroTokenTransferBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.TRANSFER])
 
+        return s
+
         # self.eurotoken_blockchain.on_user_connection(payment_id, pubkey, peer.address[0], peer.address[1])
+
+    # def
 
     def set_callback_instance(self, eurotoken_blockchain):
         self.eurotoken_blockchain = eurotoken_blockchain

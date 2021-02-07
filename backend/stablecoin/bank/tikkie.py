@@ -10,7 +10,7 @@ class Tikkie(Bank):
         ans = self.create_request(amount=amount, description="EuroToken Exchange", referenceId=payment_id.replace("=", "_"))
         return {v:ans[k] for k, v in { 'url': 'url', 'paymentRequestToken': 'payment_id'}.items()}
 
-    def initiate_payment(self, account, amount):
+    def initiate_payment(self, account, amount, payment_id):
         return None
 
     def attempt_payment_done(self, paymentRequestToken):

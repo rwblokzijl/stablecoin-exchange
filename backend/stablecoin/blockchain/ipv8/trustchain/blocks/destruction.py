@@ -3,11 +3,13 @@ from ipv8.attestation.trustchain.block                 import ValidationResult
 
 class EuroTokenDestructionBlock(EuroTokenBlock):
     def __init__(self, *args, **kwargs):
-        super(EuroTokenDestructionBlock, self).__init__(*args, **kwargs)
+        return super(EuroTokenDestructionBlock, self).__init__(*args, **kwargs)
 
     def validate_transaction(self, database):
-        # result, errors =  super(EuroTokenDestructionBlock, self).validate_transaction(database)
-        result, errors =  ValidationResult.valid, []
+        # print("VALIDATE DESTRUCTION")
+        result, errors =  super(EuroTokenDestructionBlock, self).validate_transaction(database)
+        # print("VALIDATE DESTRUCTION PARENT DONE")
+        # result, errors =  ValidationResult.valid, []
 
         if "amount" not in self.transaction:
             result = ValidationResult.invalid
@@ -32,3 +34,7 @@ class EuroTokenDestructionBlockListener(EuroTokenBlockListener):
                 block.transaction["payment_id"],
                 block.transaction["amount"],
                 "temp")
+
+    def should_sign(self, block):
+        print("SHOULD SIGN")
+        return True

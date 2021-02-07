@@ -1,9 +1,11 @@
-from ipv8.attestation.trustchain.block                       import EMPTY_PK
+from ipv8.attestation.trustchain.block                       import EMPTY_PK, UNKNOWN_SEQ
 from stablecoin.blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
 def isProposal(block):
-    if block.link_public_key == EMPTY_PK:
+    if block.link_sequence_number == UNKNOWN_SEQ:
         return True
+    else:
+        return False
 
 def isAgreement(block):
     return not isProposal(block)
@@ -17,6 +19,7 @@ def get_block_balance_change(block):
     elif block.type in [ BlockTypes.TRANSFER, BlockTypes.CREATION ] and isAgreement(block): # block is receiving money
         return block.transaction["amount"]
     else: #block does nothing
+        # print(f"Does nothing ({block.type})" )
         return 0
 
 def get_balance_for_block(block, persistence):
