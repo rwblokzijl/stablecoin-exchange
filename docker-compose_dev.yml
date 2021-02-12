@@ -5,23 +5,19 @@ services:
   app:
     restart: always
     build:
-      context: ./backend
+      context: .
     ports:
       - "8090:8090"
+      - "8080:8080"
+      - "8000:8000"
     volumes:
       # - /opt/eurotoken/database:/vol/database
       - ./backend/.local:/vol/database
       - ~/.ssh/eurotoken:/vol/keys
-    environment:
-      - DOCKER=1
 
-  proxy:
-    restart: always
-    build:
-      context: ./frontend
-    ports:
-      - "8080:8080"
-    depends_on:
-      - app
+      - ./frontend:/ur
+
+    # environment:
+      # - DEBUG=1
 
 

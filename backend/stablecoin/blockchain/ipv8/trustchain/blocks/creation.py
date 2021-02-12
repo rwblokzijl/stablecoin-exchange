@@ -1,4 +1,4 @@
-from stablecoin.blockchain.ipv8.trustchain.blocks.base import EuroTokenBlock, EuroTokenBlockListener
+from blockchain.ipv8.trustchain.blocks.base import EuroTokenBlock, EuroTokenBlockListener
 from ipv8.attestation.trustchain.block                 import ValidationResult
 
 class EuroTokenCreationBlock(EuroTokenBlock):

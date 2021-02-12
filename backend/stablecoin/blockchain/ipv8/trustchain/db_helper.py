@@ -1,5 +1,5 @@
 from ipv8.attestation.trustchain.block                       import EMPTY_PK, UNKNOWN_SEQ, GENESIS_SEQ
-from stablecoin.blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
+from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
 def isProposal(block):
     if block.link_sequence_number == UNKNOWN_SEQ:

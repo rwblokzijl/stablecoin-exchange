@@ -1,6 +1,6 @@
-from stablecoin.ui.ui import UI
-from stablecoin.stablecoin import StablecoinInteractor
-from stablecoin.transaction import Transaction
+from ui.ui import UI
+from stablecoin import StablecoinInteractor
+from transaction import Transaction
 
 from aiohttp import web
 
@@ -384,10 +384,12 @@ class MyRESTManager(RESTManager):
     def __str__(self) -> str:
         return "rest"
 
-    async def start(self, port=8085):
+    async def start(self, ip='0.0.0.0', port=8000):
         """
         Starts the HTTP API with the listen port as specified in the session configuration.
         """
+
+        print("STARTING REST")
 
         root_endpoint = RootEndpoint(middlewares=[cors_middleware])
         root_endpoint.initialize(self.session)
@@ -406,6 +408,6 @@ class MyRESTManager(RESTManager):
         runner = web.AppRunner(root_endpoint.app, access_log=None)
         await runner.setup()
         # If localhost is used as hostname, it will randomly either use 127.0.0.1 or ::1
-        self.site = web.TCPSite(runner, '127.0.0.1', port)
+        self.site = web.TCPSite(runner, ip, port)
         await self.site.start()
 

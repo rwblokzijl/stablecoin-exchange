@@ -1,4 +1,4 @@
-from stablecoin.bank.payment_system import PaymentSystem
+from bank.payment_system import PaymentSystem
 from abc import abstractmethod
 from datetime import datetime
 

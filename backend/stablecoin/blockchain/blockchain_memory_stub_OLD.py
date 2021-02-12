@@ -1,4 +1,4 @@
-from stablecoin.blockchain.blockchain import Blockchain
+from blockchain.blockchain import Blockchain
 
 class BlockchainStub(Blockchain):
     transactions = []

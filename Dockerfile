@@ -1,4 +1,4 @@
-FROM python:3.7.7-alpine
+FROM python3.7-nodejs12-alpine
 
 ENV PATH="/scripts:${PATH}"
 
@@ -12,14 +12,14 @@ RUN pip install -r /requirements.txt
 RUN apk del .tmp
 
 RUN mkdir -p /vol/database
-RUN adduser -D user
-RUN chown -R user:user /vol
 
 RUN mkdir /eurotoken
-COPY ./stablecoin /eurotoken
 WORKDIR /eurotoken
 RUN chmod -R 755 /eurotoken
 
-USER user
+WORKDIR /usr/app
+COPY package.json .
+RUN npm install --quiet
+COPY . .
 
-CMD ["python", "-u", "run_coin.py"]
+CMD ["python", "run_coin.py"]

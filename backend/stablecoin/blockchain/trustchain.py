@@ -1,8 +1,8 @@
-from stablecoin.bank.payment_system                  import PaymentSystem
+from bank.payment_system                  import PaymentSystem
 from dataclasses                                     import dataclass
 from enum                                            import Enum
-from stablecoin.blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
-from stablecoin.blockchain.ipv8.trustchain.community import MyTrustChainCommunity
+from blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
+from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
 from datetime                                        import datetime
 
 from binascii import hexlify, unhexlify

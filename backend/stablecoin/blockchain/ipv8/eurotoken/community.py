@@ -1,7 +1,7 @@
 from ipv8.community                        import Community
 from ipv8.lazy_community                   import lazy_wrapper
 
-from stablecoin.blockchain.ipv8.eurotoken.message import GatewayConnectMessage
+from blockchain.ipv8.eurotoken.message import GatewayConnectMessage
 
 class EuroTokenCommunity(Community):
 

@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
+#!/usr/bin/env pipenv-shebang
 
-#### #!/usr/bin/env pipenv-shebang
+from stablecoin import StablecoinInteractor
 
-from stablecoin.stablecoin import StablecoinInteractor
+# from bank.ing              import ING
+from blockchain.trustchain import TrustChain
+# from persistence.database  import Database
 
-# from stablecoin.bank.ing              import ING
-from stablecoin.blockchain.trustchain import TrustChain
-# from stablecoin.persistence.database  import Database
+from bank.tikkie                     import Tikkie
+from blockchain.chainstub            import ChainStub
+from persistence.inmemorypersistence import InMemoryPersistence
+from blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
+from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
 
-from stablecoin.bank.tikkie                     import Tikkie
-from stablecoin.blockchain.chainstub            import ChainStub
-from stablecoin.persistence.inmemorypersistence import InMemoryPersistence
-from stablecoin.blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
-from stablecoin.blockchain.ipv8.trustchain.community import MyTrustChainCommunity
-
-from stablecoin.ui.rest import MyRESTManager
+from ui.rest import MyRESTManager
 
 from asyncio import ensure_future, get_event_loop
 
@@ -24,11 +23,15 @@ from ipv8_service import IPv8
 from binascii import hexlify, unhexlify
 from base64 import b64encode
 
+import os
+
 GATEWAY_NAME = "Demo Gateway"
 GATEWAY_HOSTNAME = "gateway.euro-token.nl"
-GATEWAY_IP = "10.0.0.27"
+GATEWAY_IP = "0.0.0.0"
 RATE_E2T = 1.00
 RATE_T2E = 1.00
+
+DOCKER = bool(int(os.environ.get('DOCKER', 0)))
 
 async def start_communities(args):
     print("starting")
@@ -36,17 +39,16 @@ async def start_communities(args):
     ipv8_port = 8090
     hostname = GATEWAY_HOSTNAME
     ip_address = GATEWAY_IP
-    print(f"Address: {ip_address}")
     configuration = get_default_configuration()
-    configuration['address'] = ip_address
     configuration['port'] = ipv8_port
     configuration['keys'] = [{
         'alias': "my peer",
         'generation': u"curve25519",
-        'file': f".keys/ec.pem"
+        'file': f"/vol/keys/trustchain/ec.pem" if DOCKER else f".keys/ec.pem"
         }]
+    configuration['address'] = ip_address
     configuration['logger'] = {
-            'level': "INFO",
+            'level': "DEBUG",
             }
     configuration['overlays'] = [{
         'class': 'MyTrustChainCommunity',
@@ -59,7 +61,7 @@ async def start_communities(args):
                 }
             }],
         'initialize': {
-            'working_directory':f'/vol/database'
+            'working_directory': f'/vol/database'if DOCKER else f'.local'
             },
         'on_start': [('started', )]
         }, {
@@ -81,14 +83,21 @@ async def start_communities(args):
     await ipv8.start()
     interactor = buildSI(ipv8, hostname, ipv8_port)
     rest_manager = MyRESTManager(interactor)
-    await rest_manager.start(rest_port)
+    await rest_manager.start(ip_address, rest_port)
 
 def buildSI(ipv8, address, ipv8_port):
+    prefix = '/vol/keys/' if DOCKER else '~/.ssh/eurotoken/'
     bank = Tikkie(
             production=False,
-            abn_api_path='~/.ssh/abn_stablecoin_key',
-            sandbox_key_path='~/.ssh/tikkie_key_sandbox',
-            production_key_path='~/.ssh/tikkie_key_prod',
+
+            # abn_api_path='/vol/keys/tikkie/abn_stablecoin_key',
+            # sandbox_key_path='/vol/keys/tikkie/tikkie_key_sandbox',
+            # production_key_path='/vol/keys/tikkie/tikkie_key_prod',
+
+            abn_api_path=f'{prefix}/tikkie/abn_stablecoin_key',
+            sandbox_key_path=f'{prefix}/tikkie/tikkie_key_sandbox',
+            production_key_path=f'{prefix}/tikkie/tikkie_key_prod',
+
             global_url="http://bagn.blokzijl.family",
             url="/api/exchange/e2t/tikkie_callback")
 

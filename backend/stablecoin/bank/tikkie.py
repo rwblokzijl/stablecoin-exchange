@@ -1,4 +1,4 @@
-from stablecoin.bank.bank import Bank
+from bank.bank import Bank
 import requests
 from pathlib import Path
 

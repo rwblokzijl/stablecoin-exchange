@@ -1,8 +1,8 @@
-from stablecoin.bank.bank               import Bank
-from stablecoin.blockchain.blockchain   import Blockchain
-from stablecoin.persistence.persistence import Persistence
-from stablecoin.ui.ui                   import UI
-from stablecoin.transaction             import Transaction
+from bank.bank               import Bank
+from blockchain.blockchain   import Blockchain
+from persistence.persistence import Persistence
+from ui.ui                   import UI
+from transaction             import Transaction
 
 from abc import ABC, abstractmethod
 

@@ -3,14 +3,14 @@ from ipv8.keyvault.crypto                  import ECCrypto
 from ipv8.peer                             import Peer
 from ipv8.lazy_community                   import lazy_wrapper
 
-from stablecoin.blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
+from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
-from stablecoin.blockchain.ipv8.trustchain.blocks.checkpoint  import EuroTokenCheckpointBlockListener
-from stablecoin.blockchain.ipv8.trustchain.blocks.creation    import EuroTokenCreationBlockListener
-from stablecoin.blockchain.ipv8.trustchain.blocks.destruction import EuroTokenDestructionBlockListener
-from stablecoin.blockchain.ipv8.trustchain.blocks.transfer    import EuroTokenTransferBlockListener
+from blockchain.ipv8.trustchain.blocks.checkpoint  import EuroTokenCheckpointBlockListener
+from blockchain.ipv8.trustchain.blocks.creation    import EuroTokenCreationBlockListener
+from blockchain.ipv8.trustchain.blocks.destruction import EuroTokenDestructionBlockListener
+from blockchain.ipv8.trustchain.blocks.transfer    import EuroTokenTransferBlockListener
 
-from stablecoin.blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change
+from blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change
 
 from binascii import hexlify, unhexlify
 
