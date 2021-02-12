@@ -1,4 +1,4 @@
-from bank.payment_system                  import PaymentSystem
+from blockchain.blockchain import Blockchain
 from dataclasses                                     import dataclass
 from enum                                            import Enum
 from blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
@@ -8,7 +8,7 @@ from datetime                                        import datetime
 from binascii import hexlify, unhexlify
 import base64
 
-class TrustChain(PaymentSystem):
+class TrustChain(Blockchain):
 
     @dataclass(unsafe_hash=True)
     class TrustChainPaymentRequest:
@@ -68,8 +68,6 @@ class TrustChain(PaymentSystem):
     #TODO return block id
     def initiate_payment(self, account, amount, payment_id):
         "Returns transaction_id if successful"
-
-        print(account)
 
         public_key = account["pubkey"]
         ip = account["ip"]

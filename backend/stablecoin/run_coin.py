@@ -8,7 +8,6 @@ from blockchain.trustchain import TrustChain
 # from persistence.database  import Database
 
 from bank.tikkie                     import Tikkie
-from blockchain.chainstub            import ChainStub
 from persistence.inmemorypersistence import InMemoryPersistence
 from blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
 from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
@@ -33,8 +32,10 @@ RATE_T2E = 1.00
 
 DOCKER = bool(int(os.environ.get('DOCKER', 0)))
 
+def resolve_user(path):
+    return os.path.expanduser(path)
+
 async def start_communities(args):
-    print("starting")
     rest_port = 8000
     ipv8_port = 8090
     hostname = GATEWAY_HOSTNAME
@@ -44,11 +45,11 @@ async def start_communities(args):
     configuration['keys'] = [{
         'alias': "my peer",
         'generation': u"curve25519",
-        'file': f"/vol/keys/trustchain/ec.pem" if DOCKER else f".keys/ec.pem"
+        'file': f"/vol/keys/trustchain/ec.pem" if DOCKER else resolve_user("~/.ssh/eurotoken/trustchain/ec.pem")
         }]
     configuration['address'] = ip_address
     configuration['logger'] = {
-            'level': "DEBUG",
+            'level': "INFO",
             }
     configuration['overlays'] = [{
         'class': 'MyTrustChainCommunity',
@@ -86,7 +87,7 @@ async def start_communities(args):
     await rest_manager.start(ip_address, rest_port)
 
 def buildSI(ipv8, address, ipv8_port):
-    prefix = '/vol/keys/' if DOCKER else '~/.ssh/eurotoken/'
+    prefix = '/vol/keys/' if DOCKER else resolve_user('~/.ssh/eurotoken/')
     bank = Tikkie(
             production=False,
 
@@ -121,8 +122,6 @@ def main(*args):
 
     ui          = REST(s)
     ui.start()
-
-    # s.print_struct()
 
 if __name__ == '__main__':
     import sys
