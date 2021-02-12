@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
-#!/usr/bin/env pipenv-shebang
+
+from asyncio import ensure_future, get_event_loop
 
 from stablecoin import StablecoinInteractor
 
-# from bank.ing              import ING
 from blockchain.trustchain import TrustChain
 # from persistence.database  import Database
 
-from bank.tikkie                     import Tikkie
-from persistence.inmemorypersistence import InMemoryPersistence
+from bank.tikkie                          import Tikkie
+from persistence.inmemorypersistence      import InMemoryPersistence
 from blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
 from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
 
 from ui.rest import MyRESTManager
-
-from asyncio import ensure_future, get_event_loop
 
 from ipv8.configuration import get_default_configuration
 from ipv8_service import IPv8
@@ -24,18 +22,18 @@ from base64 import b64encode
 
 import os
 
-GATEWAY_NAME = "Demo Gateway"
-GATEWAY_HOSTNAME = "gateway.euro-token.nl"
-GATEWAY_IP = "0.0.0.0"
-RATE_E2T = 1.00
-RATE_T2E = 1.00
+GATEWAY_NAME     =       os.environ.get('GATEWAY_NAME',     "Demo Gateway")
+GATEWAY_HOSTNAME =       os.environ.get('GATEWAY_HOSTNAME', "gateway.euro-token.nl")
+GATEWAY_IP       =       os.environ.get('GATEWAY_IP',       "0.0.0.0")
+RATE_E2T         = float(os.environ.get('RATE_E2T',         1.00))
+RATE_T2E         = float(os.environ.get('RATE_T2E',         1.00))
 
 DOCKER = bool(int(os.environ.get('DOCKER', 0)))
 
 def resolve_user(path):
     return os.path.expanduser(path)
 
-async def start_communities(args):
+async def start_communities():
     rest_port = 8000
     ipv8_port = 8090
     hostname = GATEWAY_HOSTNAME
@@ -116,7 +114,7 @@ def buildSI(ipv8, address, ipv8_port):
 
     return s
 
-def main(*args):
+def main():
 
     s = buildSI()
 
@@ -124,10 +122,7 @@ def main(*args):
     ui.start()
 
 if __name__ == '__main__':
-    import sys
-    # main(sys.argv[1:])
-
-    ensure_future(start_communities(sys.argv[1:]))
+    ensure_future(start_communities())
     get_event_loop().run_forever()
 
 
