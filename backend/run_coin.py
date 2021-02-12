@@ -1,4 +1,6 @@
-#!/usr/bin/env pipenv-shebang
+#!/usr/bin/env python3
+
+#### #!/usr/bin/env pipenv-shebang
 
 from stablecoin.stablecoin import StablecoinInteractor
 
@@ -22,21 +24,21 @@ from ipv8_service import IPv8
 from binascii import hexlify, unhexlify
 from base64 import b64encode
 
+GATEWAY_NAME = "Demo Gateway"
+GATEWAY_HOSTNAME = "gateway.euro-token.nl"
+GATEWAY_IP = "10.0.0.27"
+RATE_E2T = 1.00
+RATE_T2E = 1.00
+
 async def start_communities(args):
     print("starting")
     rest_port = 8000
     ipv8_port = 8090
-    if args:
-        address = args[0].strip()
-        if len(args) > 1:
-            global_address = args[1].strip()
-        else:
-            global_address = address
-    else:
-        global_address = address = '127.0.0.1'
-    print(f"Address: {address}")
+    hostname = GATEWAY_HOSTNAME
+    ip_address = GATEWAY_IP
+    print(f"Address: {ip_address}")
     configuration = get_default_configuration()
-    configuration['address'] = address
+    configuration['address'] = ip_address
     configuration['port'] = ipv8_port
     configuration['keys'] = [{
         'alias': "my peer",
@@ -57,7 +59,7 @@ async def start_communities(args):
                 }
             }],
         'initialize': {
-            'working_directory':f'.local'
+            'working_directory':f'/vol/database'
             },
         'on_start': [('started', )]
         }, {
@@ -77,7 +79,7 @@ async def start_communities(args):
 
     ipv8 = IPv8(configuration, extra_communities={'MyTrustChainCommunity': MyTrustChainCommunity, 'EuroTokenCommunity': EuroTokenCommunity})
     await ipv8.start()
-    interactor = buildSI(ipv8, global_address, ipv8_port)
+    interactor = buildSI(ipv8, hostname, ipv8_port)
     rest_manager = MyRESTManager(interactor)
     await rest_manager.start(rest_port)
 
@@ -94,10 +96,12 @@ def buildSI(ipv8, address, ipv8_port):
     persistence = InMemoryPersistence()
 
     s = StablecoinInteractor(
+            name        = GATEWAY_NAME,
             bank        = bank,
             blockchain  = blockchain,
             persistence = persistence,
-            # ui          = ui,
+            rateE2T     = RATE_E2T,
+            rateT2E     = RATE_T2E,
             )
 
     return s

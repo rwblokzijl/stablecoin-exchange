@@ -234,8 +234,8 @@ export default {
       exchangeAmountE2T: null,
       exchangeAmountT2E: null,
       balanceCent: 0,
-      rateE2Tcent: 99,
-      rateT2Ecent: 99,
+      rateE2Tcent: 100,
+      rateT2Ecent: 100,
       transactions: []
     }
   },
@@ -302,6 +302,8 @@ export default {
       data.public_key = payment.gateway_connection_data.public_key
       data.ip = payment.gateway_connection_data.ip
       data.port = payment.gateway_connection_data.port
+      data.name = payment.gateway_name
+      data.type = 'destruction'
       return JSON.stringify(data)
     },
     CREATE_get_connection_data(payment) {
@@ -311,6 +313,8 @@ export default {
       data.public_key = payment.gateway_connection_data.public_key
       data.ip = payment.gateway_connection_data.ip
       data.port = payment.gateway_connection_data.port
+      data.name = payment.gateway_name
+      data.type = 'creation'
       return JSON.stringify(data)
     },
     show (paymentId) {

@@ -33,7 +33,7 @@ class EuroTokenDestructionBlockListener(EuroTokenBlockListener):
         self.community.eurotoken_blockchain.on_payment(
                 block.transaction["payment_id"],
                 block.transaction["amount"],
-                "temp")
+                block.public_key)
 
     def should_sign(self, block):
         print("SHOULD SIGN")

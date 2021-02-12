@@ -86,6 +86,7 @@ class APIEndpoint(BaseEndpoint):
         transaction = self.clean_transaction_status(copy(t.data)) #copy
 
         return {
+            "gateway_name":             self.stablecoin_interactor.name,
             "status":                   transaction['status'],
             "status_text":              transaction['status_text'],
             "created":                  transaction['created_on'],

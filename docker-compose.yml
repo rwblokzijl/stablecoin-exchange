@@ -1,0 +1,24 @@
+version: '3.7'
+
+services:
+
+  app:
+    restart: always
+    build:
+      context: ./backend
+    volumes:
+      # - /opt/eurotoken/database:/vol/database
+      - ./backend/.local:/vol/database
+    # environment:
+      # - DEBUG=1
+
+  proxy:
+    restart: always
+    build:
+      context: ./frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - app
+
+

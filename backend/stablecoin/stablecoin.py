@@ -18,10 +18,13 @@ class Response(ABC):
 
 class StablecoinInteractor:
 
-    def __init__(self, bank, persistence, blockchain):
+    def __init__(self, name, bank, persistence, blockchain, rateE2T, rateT2E):
+        self.name        = name
         self.bank        = bank
         self.persistence = persistence
         self.blockchain  = blockchain
+        self.rateT2E     = rateT2E
+        self.rateE2T     = rateE2T
 
         self.blockchain.set_callback_instance(self)
         self.bank.set_callback_instance(self)
@@ -248,12 +251,14 @@ class StablecoinInteractor:
     def get_exchange_rate_col_to_tok(self, collatoral_amount_cent):
         if not type(collatoral_amount_cent) == int:
             raise self.VerificationError("Collatoral cent amount must be an Integer")
-        return math.floor(collatoral_amount_cent * 0.99)
+        # return math.floor(collatoral_amount_cent * 0.99)
+        return math.floor(collatoral_amount_cent * self.rateE2T)
 
     def get_exchange_rate_tok_to_col(self, token_amount_cent):
         if not type(token_amount_cent) == int:
             raise self.VerificationError("Token cent amount must be an Integer")
-        return math.floor(token_amount_cent * 0.99)
+        # return math.floor(token_amount_cent * 0.99)
+        return math.floor(token_amount_cent * self.rateT2E)
 
     class VerificationError(Exception):
         pass

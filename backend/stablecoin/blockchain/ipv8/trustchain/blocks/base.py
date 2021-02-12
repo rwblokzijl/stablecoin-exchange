@@ -1,3 +1,4 @@
+from ipv8.attestation.trustchain.block     import GENESIS_HASH
 from ipv8.attestation.trustchain.block     import TrustChainBlock, ValidationResult
 from ipv8.attestation.trustchain.listener  import BlockListener
 
@@ -35,10 +36,10 @@ class EuroTokenBlock(TrustChainBlock):
 
         if isProposal(self):
             blockBefore  = database.get_block_with_hash(self.previous_hash)
-            if not blockBefore:
+            if blockBefore is None and self.previous_hash != GENESIS_HASH:
                 return ValidationResult.partial_previous, [f'Missing block before']
             else:
-                balanceBefore = get_balance_for_block(blockBefore, database)
+                balanceBefore = get_balance_for_block(blockBefore, database) or 0
                 balanceChange = get_block_balance_change(self)
                 if self.transaction["balance"] != balanceBefore + balanceChange:
                     return ValidationResult.invalid, [f'block balance ({self.sequence_number}): {self.transaction["balance"]} does not match calculated balance: {balanceBefore} + {balanceChange} ']
@@ -57,79 +58,6 @@ class EuroTokenBlock(TrustChainBlock):
                 trans,
                 self.type)
 
-
-class EuroTokenBlockOld(TrustChainBlock):
-    def balance(self, database):
-        if self.transaction['sender'] == self.public_key:
-            return self.transaction['balance']
-        else:
-            return self.get_sender_balance_from_chain_before_block(database) + self.transaction['amount']
-
-    def get_sender_balance_from_chain_before_block(self, database):
-
-        # TODO: This can be made more efficient
-        # 1. include the receiver balance in the agreement somehow, else
-        # 2. get the blocks in 1 query and loop over them
-        " Get the balance of self.transaction[sender] at the point before this block "
-        sender = self.transaction['sender']
-
-        # self is first
-        if self.sequence_number == 1:
-            return INITIAL_BALANCE
-
-        #add up all balances until last verified balance
-        known_balance = 0
-        check_block = database.get_block_before(self)
-        while (check_block is not None and
-                check_block.sequence_number != 1 and
-                check_block.transaction['receiver'] != sender):
-            # sender revieved money this block
-            if check_block.type == b'transfer': #ignore wrong blocks
-                known_balance += check_block.transaction['amount']
-            check_block = database.get_block_before(check_block)
-        if check_block is None:
-            return None
-        if check_block.sequence_number == 1:
-            # We are at the genesis block
-            known_balance += INITIAL_BALANCE
-        else:
-            # check_block is the last verified block
-            known_balance += check_block.transaction['balance']
-
-        return known_balance
-
-    def validate_transaction(self, database):
-        return ValidationResult.valid, []
-    # link = database.get_linked(self)
-
-        sender_trans_pub = unhexlify(self.transaction['sender'])
-        receiv_trans_pub = unhexlify(self.transaction['receiver'])
-
-        # Check if transaction ids matches block ids
-        if (sender_trans_pub == self.public_key) and (receiv_trans_pub == self.link_public_key):
-            # This is a proposal block
-            pass
-        elif (sender_trans_pub == self.link_public_key) and(receiv_trans_pub == self.public_key):
-            # This is an agreement block
-            pass
-        else:
-            # print("sender_trans_pub     ", sender_trans_pub)
-            # print("receiv_trans_pub     ", receiv_trans_pub)
-
-            # print("self.public_key      ", self.public_key)
-            # print("self.link_public_key ", self.link_public_key)
-            return ValidationResult.invalid, ["Transaction keys do not match block keys"]
-
-        # Get senders balance
-        sender_balance = self.get_sender_balance_from_chain_before_block(database)
-        if sender_balance is None:
-            return ValidationResult.partial_previous, ["Missing blocks"]
-
-        if self.transaction['balance'] != sender_balance - self.transaction['amount']:
-            return ValidationResult.invalid, [f"Inconsistent balance, block: ({self}), known_balance: ({sender_balance})"]
-        if self.transaction['balance'] < 0:
-            return ValidationResult.invalid, ["Insufficient funds"]
-        return ValidationResult.valid, []
 
 class EuroTokenBlockListener(BlockListener):
     BLOCK_CLASS = EuroTokenBlock
