@@ -1,6 +1,6 @@
-from ipv8.attestation.trustchain.block     import GENESIS_HASH
-from ipv8.attestation.trustchain.block     import TrustChainBlock, ValidationResult
-from ipv8.attestation.trustchain.listener  import BlockListener
+from pyipv8.ipv8.attestation.trustchain.block     import GENESIS_HASH
+from pyipv8.ipv8.attestation.trustchain.block     import TrustChainBlock, ValidationResult
+from pyipv8.ipv8.attestation.trustchain.listener  import BlockListener
 
 from blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change, isProposal, isAgreement
 

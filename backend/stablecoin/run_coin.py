@@ -14,8 +14,8 @@ from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
 
 from ui.rest import MyRESTManager
 
-from ipv8.configuration import get_default_configuration
-from ipv8_service import IPv8
+from pyipv8.ipv8.configuration import get_default_configuration
+from pyipv8.ipv8_service import IPv8
 
 from binascii import hexlify, unhexlify
 from base64 import b64encode

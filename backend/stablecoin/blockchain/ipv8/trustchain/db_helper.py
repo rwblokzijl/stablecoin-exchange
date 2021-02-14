@@ -1,4 +1,4 @@
-from ipv8.attestation.trustchain.block                       import EMPTY_PK, UNKNOWN_SEQ, GENESIS_SEQ
+from pyipv8.ipv8.attestation.trustchain.block                       import EMPTY_PK, UNKNOWN_SEQ, GENESIS_SEQ
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
 def isProposal(block):

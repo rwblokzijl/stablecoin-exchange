@@ -1,5 +1,5 @@
-from ipv8.community                        import Community
-from ipv8.lazy_community                   import lazy_wrapper
+from pyipv8.ipv8.community                        import Community
+from pyipv8.ipv8.lazy_community                   import lazy_wrapper
 
 from blockchain.ipv8.eurotoken.message import GatewayConnectMessage
 

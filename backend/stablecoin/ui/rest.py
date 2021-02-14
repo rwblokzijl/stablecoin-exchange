@@ -7,16 +7,11 @@ from aiohttp import web
 from abc import ABC
 from copy import copy
 
-from ipv8.attestation.trustchain.block import TrustChainBlock, ValidationResult
-from ipv8.attestation.trustchain.listener import BlockListener
-from ipv8.REST.rest_manager import RESTManager, cors_middleware
-from ipv8.keyvault.crypto import ECCrypto
-from ipv8.peer import Peer
+from pyipv8.ipv8.REST.rest_manager  import RESTManager, cors_middleware
+from pyipv8.ipv8.REST.base_endpoint import BaseEndpoint
 
 from aiohttp import web
 from aiohttp_apispec import setup_aiohttp_apispec
-
-from ipv8.REST.base_endpoint import BaseEndpoint, Response
 
 from binascii import hexlify, unhexlify
 

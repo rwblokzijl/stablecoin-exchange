@@ -11,7 +11,6 @@ pytest-aiohttp = "*"
 asynctest = "*"
 
 [packages]
-pyipv8 = "==2.4.0"
 requests-oauthlib = "*"
 requests-http-signature = "*"
 cryptography = "*"

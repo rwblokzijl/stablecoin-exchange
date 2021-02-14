@@ -1,4 +1,4 @@
-from ipv8.messaging.lazy_payload           import VariablePayload, vp_compile
+from pyipv8.ipv8.messaging.lazy_payload           import VariablePayload, vp_compile
 
 @vp_compile
 class GatewayConnectMessage(VariablePayload):
