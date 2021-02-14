@@ -1,4 +1,4 @@
-from ipv8.attestation.community import TrustChainCommunity
+from py-ipv8.ipv8.attestation.community import TrustChainCommunity
 from ipv8.keyvault.crypto                  import ECCrypto
 from ipv8.peer                             import Peer
 from ipv8.lazy_community                   import lazy_wrapper
