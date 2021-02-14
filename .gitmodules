@@ -1,0 +1,3 @@
+[submodule "backend/stablecoin/py-ipv8"]
+	path = backend/stablecoin/py-ipv8
+	url = git@github.com:Tribler/py-ipv8.git
