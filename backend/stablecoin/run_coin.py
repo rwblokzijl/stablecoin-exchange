@@ -22,9 +22,9 @@ from base64 import b64encode
 
 import os
 
-GATEWAY_NAME     =       os.environ.get('GATEWAY_NAME',     "Demo Gateway")
-GATEWAY_HOSTNAME =       os.environ.get('GATEWAY_HOSTNAME', "gateway.euro-token.nl")
-GATEWAY_IP       =       os.environ.get('GATEWAY_IP',       "0.0.0.0")
+GATEWAY_NAME     =       os.environ.get('GATEWAY_NAME',     "Demo Gateway").strip()
+GATEWAY_HOSTNAME =       os.environ.get('GATEWAY_HOSTNAME', "gateway.euro-token.nl").strip()
+GATEWAY_IP       =       os.environ.get('GATEWAY_IP',       "0.0.0.0").strip()
 RATE_E2T         = float(os.environ.get('RATE_E2T',         1.00))
 RATE_T2E         = float(os.environ.get('RATE_T2E',         1.00))
 
@@ -43,7 +43,7 @@ async def start_communities():
     configuration['keys'] = [{
         'alias': "my peer",
         'generation': u"curve25519",
-        'file': f"/vol/keys/trustchain/ec.pem" if DOCKER else resolve_user("~/.ssh/eurotoken/trustchain/ec.pem")
+        'file': (f"/vol/keys/trustchain/ec.pem" if DOCKER else resolve_user("~/.ssh/eurotoken/trustchain/ec.pem"))
         }]
     configuration['address'] = ip_address
     configuration['logger'] = {
@@ -60,7 +60,7 @@ async def start_communities():
                 }
             }],
         'initialize': {
-            'working_directory': f'/vol/database'if DOCKER else f'.local'
+            'working_directory': (f'/vol/database'if DOCKER else f'.local')
             },
         'on_start': [('started', )]
         }, {
@@ -85,7 +85,7 @@ async def start_communities():
     await rest_manager.start(ip_address, rest_port)
 
 def buildSI(ipv8, address, ipv8_port):
-    prefix = '/vol/keys/' if DOCKER else resolve_user('~/.ssh/eurotoken/')
+    prefix = ('/vol/keys/' if DOCKER else resolve_user('~/.ssh/eurotoken/'))
     bank = Tikkie(
             production=False,
 

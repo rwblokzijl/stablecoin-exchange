@@ -1,12 +1,13 @@
-FROM python:3.7-alpine
+FROM python:3.7.7-alpine
 
 ENV PATH="/scripts:${PATH}"
-
-COPY ./requirements.txt /requirements.txt
 
 RUN apk add --update --no-cache libsodium libressl
 RUN apk add --update --no-cache --virtual .tmp python3-dev build-base linux-headers libffi-dev libressl-dev musl-dev cargo
 
+# RUN pip install cryptography #cache install to avoid building each time
+
+COPY ./requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 RUN apk del .tmp

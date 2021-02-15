@@ -6,4 +6,9 @@ lock:
 build: lock
 	docker-compose build
 
+up:
+	docker-compose up
+
+upb: lock
+	docker-compose up --build
 
