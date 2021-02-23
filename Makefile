@@ -4,11 +4,24 @@ lock:
 	cd backend && pipenv lock --requirements > requirements.txt
 
 build: lock
-	docker-compose build
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose build
 
 up:
-	docker-compose up
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose up
 
 upb: lock
-	docker-compose up --build
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose up --build
+
+run:
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d
+
+stop:
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml stop
+
+restart:
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml restart
+
+deploy: lock
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d --build
+
 

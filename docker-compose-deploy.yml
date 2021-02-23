@@ -1,0 +1,32 @@
+version: '3.7'
+
+services:
+
+  app:
+    restart: always
+    build:
+      context: ./backend
+    ports:
+      - "8090:8090"
+    volumes:
+      - /opt/eurotoken/database:/vol/database
+      # - ./backend/.local:/vol/database
+      - ~/.ssh/eurotoken:/vol/keys
+    environment:
+      - DOCKER=           1
+      - GATEWAY_NAME=     Demo Gateway
+      - GATEWAY_HOSTNAME= gateway.euro-token.nl
+      - GATEWAY_IP=       0.0.0.0
+      - RATE_E2T=         1.00
+      - RATE_T2E=         1.00
+
+  proxy:
+    restart: always
+    build:
+      context: ./frontend
+    ports:
+      - "8081:8080"
+    depends_on:
+      - app
+
+
