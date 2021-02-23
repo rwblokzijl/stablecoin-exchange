@@ -30,10 +30,13 @@ class EuroTokenDestructionBlockListener(EuroTokenBlockListener):
     def received_block(self, block):
         print("GOT DESTRUCTION!!!")
 
-        self.community.eurotoken_blockchain.on_payment(
-                block.transaction["payment_id"],
-                block.transaction["amount"],
-                block.public_key)
+        persistence = self.community.persistence
+
+        if block.public_key == persistence.my_pk: # only once i accepted the transaction
+            self.community.eurotoken_blockchain.on_payment(
+                    block.transaction["payment_id"],
+                    block.transaction["amount"],
+                    block.public_key)
 
     def should_sign(self, block):
         print("SHOULD SIGN")

@@ -9,6 +9,7 @@ from blockchain.ipv8.trustchain.blocks.checkpoint  import EuroTokenCheckpointBlo
 from blockchain.ipv8.trustchain.blocks.creation    import EuroTokenCreationBlockListener
 from blockchain.ipv8.trustchain.blocks.destruction import EuroTokenDestructionBlockListener
 from blockchain.ipv8.trustchain.blocks.transfer    import EuroTokenTransferBlockListener
+from blockchain.ipv8.trustchain.blocks.rollback    import EuroTokenRollBackBlockListener
 
 from blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change
 
@@ -24,6 +25,7 @@ class MyTrustChainCommunity(TrustChainCommunity):
         self.add_listener(EuroTokenCreationBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.CREATION])
         self.add_listener(EuroTokenDestructionBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.DESTRUCTION])
         self.add_listener(EuroTokenTransferBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.TRANSFER])
+        self.add_listener(EuroTokenRollBackBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.ROLLBACK])
 
         return s
 

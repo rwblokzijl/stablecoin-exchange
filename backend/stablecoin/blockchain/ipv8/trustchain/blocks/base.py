@@ -11,35 +11,25 @@ class EuroTokenBlock(TrustChainBlock):
         return super(EuroTokenBlock, self).__init__(*args, **kwargs)
         # self.balance = self.transaction["balance"]
 
-    def validate_transaction(self, database):
-        # result, errors =  validate_receiving_money(database)
+    def validate_transaction(self, persistence):
+        # result, errors =  validate_receiving_money(persistence)
         # if result != ValidationResult.valid:
         #     return result, errors
-        return self.validate_balance(database)
+        return self.validate_balance(persistence)
 
-    def validate_acceptance(self, database):
-        result, errors =  ValidationResult.valid, []
-        if isAgreement(self):
-            if database.get_linked(self).transaction != self.transaction:
-                return False
-                # result = ValidationResult.invalid
-                # errors += ['balance missing from transaction']
-        # return result, errors
-        return True
-
-    def validate_receiving_money(self, database):
+    def validate_receiving_money(self, persistence):
         return ValidationResult.valid, []
 
-    def validate_balance(self, database):
+    def validate_balance(self, persistence):
         if "balance" not in self.transaction:
             return ValidationResult.invalid, ['balance missing from transaction']
 
         if isProposal(self):
-            blockBefore  = database.get_block_with_hash(self.previous_hash)
+            blockBefore  = persistence.get_block_with_hash(self.previous_hash)
             if blockBefore is None and self.previous_hash != GENESIS_HASH:
                 return ValidationResult.partial_previous, [f'Missing block before']
             else:
-                balanceBefore = get_balance_for_block(blockBefore, database) or 0
+                balanceBefore = get_balance_for_block(blockBefore, persistence) or 0
                 balanceChange = get_block_balance_change(self)
                 if self.transaction["balance"] != balanceBefore + balanceChange:
                     return ValidationResult.invalid, [f'block balance ({self.sequence_number}): {self.transaction["balance"]} does not match calculated balance: {balanceBefore} + {balanceChange} ']
@@ -57,7 +47,6 @@ class EuroTokenBlock(TrustChainBlock):
                 self.link_sequence_number,
                 trans,
                 self.type)
-
 
 class EuroTokenBlockListener(BlockListener):
     BLOCK_CLASS = EuroTokenBlock

@@ -17,6 +17,7 @@ cryptography = "*"
 aiohttp = "*"
 libnacl = "*"
 aiohttp-apispec = "*"
+netifaces = "*"
 
 [requires]
 python_version = "3.7"
