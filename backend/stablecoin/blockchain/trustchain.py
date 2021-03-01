@@ -57,8 +57,8 @@ class TrustChain(Blockchain):
     def payment_request_status(self, pid):
         return False
 
-    def on_payment(self, payment_id, amount, user_pk):
-        return self.stablecoin.DESTROY_pay(payment_id, amount, str(hexlify(user_pk)))
+    def on_payment(self, payment_id, iban, amount, user_pk):
+        return self.stablecoin.DESTROY_pay(payment_id, iban, amount, str(hexlify(user_pk)))
 
     "Payout side"
     def attempt_payment_done(self, payment_id):

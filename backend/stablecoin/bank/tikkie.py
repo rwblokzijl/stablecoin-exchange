@@ -11,6 +11,9 @@ class Tikkie(Bank):
         return {v:ans[k] for k, v in { 'url': 'url', 'paymentRequestToken': 'payment_id'}.items()}
 
     def initiate_payment(self, account, amount, payment_id):
+        print(f"PAYOUT: {amount} to {account}")
+        print(f"PAYOUT: {amount} to {account}")
+        print(f"PAYOUT: {amount} to {account}")
         return None
 
     def attempt_payment_done(self, paymentRequestToken):

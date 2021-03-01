@@ -15,7 +15,7 @@ class EuroTokenDestructionBlock(EuroTokenBlock):
             result = ValidationResult.invalid
             errors += ['amount missing from transaction']
 
-        if "payment_id" not in self.transaction:
+        if "payment_id" not in self.transaction and "iban" not in self.transaction:
             result = ValidationResult.invalid
             errors += ['payment_id missing from transaction']
 
@@ -34,7 +34,8 @@ class EuroTokenDestructionBlockListener(EuroTokenBlockListener):
 
         if block.public_key == persistence.my_pk: # only once i accepted the transaction
             self.community.eurotoken_blockchain.on_payment(
-                    block.transaction["payment_id"],
+                    block.transaction.get("payment_id", None),
+                    block.transaction.get("iban", None),
                     block.transaction["amount"],
                     block.public_key)
 

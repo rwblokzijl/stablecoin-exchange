@@ -194,23 +194,25 @@ class StablecoinInteractor:
         return transaction
 
     # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
-    def DESTROY_pay(self, payment_id, amount, pubkey):
-        transaction = self.persistence.get_payment_by_id(payment_id)
-
-        if transaction is None:
-            print("no transaction found for id " + payment_id)
-            return False # TODO: Raise validation error
+    def DESTROY_pay(self, payment_id, iban, amount, pubkey):
+        if iban is not None:
+            transaction = self.DESTROY_initiate(amount, iban)
+        else:
+            transaction = self.persistence.get_payment_by_id(payment_id)
+            if transaction is None:
+                print("no transaction found for id " + payment_id)
+                return False
 
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
             print("destroy_pay: Transaction in wrong state for id " + payment_id, transaction["status"])
-            return False # TODO: Raise validation error
+            return False
 
         print("payment recieved")
 
         if transaction["amount"] != amount:
             "Incorrect amount"
-            print("incorrect amount transfered, reject block") #TODO: Make sure trustchain asks this function for validation
-            return False # TODO: Raise validation error
+            print("incorrect amount transfered, reject block")
+            return False
 
         transaction.confirm_payment(payment_transaction_data=pubkey)
 
