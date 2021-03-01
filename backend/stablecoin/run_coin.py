@@ -23,7 +23,7 @@ from base64 import b64encode
 import os
 
 GATEWAY_NAME     =       os.environ.get('GATEWAY_NAME',     "Demo Gateway").strip()
-GATEWAY_HOSTNAME =       os.environ.get('GATEWAY_HOSTNAME', "gateway.euro-token.nl").strip()
+GATEWAY_HOSTNAME =       os.environ.get('GATEWAY_HOSTNAME', "develop.euro-token.nl").strip()
 GATEWAY_IP       =       os.environ.get('GATEWAY_IP',       "0.0.0.0").strip()
 RATE_E2T         = float(os.environ.get('RATE_E2T',         1.00))
 RATE_T2E         = float(os.environ.get('RATE_T2E',         1.00))

@@ -7,9 +7,10 @@ services:
     build:
       context: ./backend
     ports:
-      - "8090:8090"
+      - "8090:8090/udp"
     volumes:
       - /opt/eurotoken/database:/vol/database
+      - /opt/eurotoken/logs:/vol/logs
       # - ./backend/.local:/vol/database
       - ~/.ssh/eurotoken:/vol/keys
     environment:

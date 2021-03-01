@@ -15,11 +15,10 @@ class EuroTokenCommunity(Community):
         return s
 
     def set_callback_instance(self, eurotoken_blockchain):
-        # print("set eb")
         self.eurotoken_blockchain = eurotoken_blockchain
 
     def started(self):
-        print("started eurotoken")
+        self.logger.warning("started eurotoken")
         async def start_communication():
             peers = self.get_peers()
             print( str(len(peers)) + " EuroToken peers")
@@ -30,8 +29,6 @@ class EuroTokenCommunity(Community):
 
     @lazy_wrapper(GatewayConnectMessage)
     def on_message(self, peer, payload):
-        print("GOT CONNECT")
-        print(peer.address)
         payment_id = payload.payment_id.decode('utf-8')
         pubkey = peer.public_key.key_to_bin().hex()
 

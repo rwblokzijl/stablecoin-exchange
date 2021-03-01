@@ -48,7 +48,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
     def ensure_receive_money_linked_blocks_available(self, block, persistence, peer):
         if block is None:
             self.logger.warning(f"Found genesis")
-            return ValidationResult.valid #genesis
+            return ValidationResult.valid, [] #genesis
         self.logger.warning(f"ensure {block.sequence_number}")
         blockBefore = persistence.get_block_with_hash(block.previous_hash) # must be available
         if not blockBefore and block.sequence_number != GENESIS_SEQ:
@@ -97,6 +97,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
             return self.validate_receive_money_linked_blocks_available(blockBefore, persistence) # recurse
 
     def validate_transaction(self, persistence):
+        print("VALIDATE CHECKPOINT")
         result, errors =  super(EuroTokenCheckpointBlock, self).validate_transaction(persistence)
 
         if result != ValidationResult.valid: #make sure main chain is present

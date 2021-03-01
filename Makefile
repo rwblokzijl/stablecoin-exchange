@@ -13,6 +13,12 @@ upb: lock
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose up --build
 
 run:
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up
+
+runb:
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up --build
+
+start:
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d
 
 stop:
@@ -23,5 +29,8 @@ restart:
 
 deploy: lock
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d --build
+
+deploya: lock
+	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d --build app
 
 
