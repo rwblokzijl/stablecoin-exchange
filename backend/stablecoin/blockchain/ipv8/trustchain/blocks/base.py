@@ -11,6 +11,9 @@ class EuroTokenBlock(TrustChainBlock):
         return super(EuroTokenBlock, self).__init__(*args, **kwargs)
         # self.balance = self.transaction["balance"]
 
+    def is_valid_gateway(self, pk):
+        return True # For now all gateways are trusted, later this is a very important check
+
     def validate_transaction(self, persistence):
         # result, errors =  validate_receiving_money(persistence)
         # if result != ValidationResult.valid:

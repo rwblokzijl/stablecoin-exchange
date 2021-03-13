@@ -6,6 +6,10 @@ class PaymentSystem(ABC):
     def set_callback_instance(self, stablecoin_instance):
         self.stablecoin = stablecoin_instance
 
+    def get_post_callback_routes(self):
+        pass
+        """ return: {url : callback_function, ...} """
+
     "Helpers"
     @abstractmethod
     def __str__(self):

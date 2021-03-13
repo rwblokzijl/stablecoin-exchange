@@ -35,7 +35,7 @@ class StablecoinInteractor:
                 }
 
     def get_additional_post_routes(self):
-        return self.bank.get_post_callback_routes()
+        return self.bank.get_post_callback_routes() or {}
 
     # Creation interface
     # CREATE_initiate # Step 1 -> returns info to connect to gateway over ipv8

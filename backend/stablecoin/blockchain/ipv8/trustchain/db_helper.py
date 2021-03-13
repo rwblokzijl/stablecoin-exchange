@@ -21,7 +21,7 @@ def get_verified_balance_for_block(block, persistence):
 
     if block.type == BlockTypes.CHECKPOINT and isProposal(block): #base 3
         linked = persistence.get_linked(block)
-        if linked is not None and linked.public_key == persistence.my_pk: #Found full checkpoint
+        if linked is not None and linked.is_valid_gateway(linked.public_key): #Found full checkpoint
             return block.transaction["balance"]
         else: #Found half checkpoint
             return self.get_verified_balance_for_block(persistence.get_block_with_hash(block.previous_hash), persistence) # recurse

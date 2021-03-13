@@ -33,7 +33,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
         self.logger.warning(f"ensure peer {block.sequence_number} ")
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
-            if linked is not None and linked.public_key == persistence.my_pk:
+            if linked is not None and self.is_valid_gateway(linked.public_key):
                 self.logger.warning("Found full checkpoint")
                 return True #done
             else:
@@ -55,7 +55,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
             return ValidationResult.partial_previous, []
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
-            if linked is not None and linked.public_key == persistence.my_pk:
+            if linked is not None and self.is_valid_gateway(linked.public_key):
                 self.logger.warning("Found full checkpoint") #dont need more info
                 return ValidationResult.valid, []
             else:
@@ -76,7 +76,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
         blockBefore = persistence.get_block_with_hash(block.previous_hash) # always available
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
-            if linked is not None and linked.public_key == persistence.my_pk:
+            if linked is not None and self.is_valid_gateway(linked.public_key):
                 self.logger.warning("Found full checkpoint")
                 return ValidationResult.valid, []
             else:
@@ -103,7 +103,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
         if result != ValidationResult.valid: #make sure main chain is present
             return result, errors
 
-        if self.link_public_key == persistence.my_pk and not persistence.get_linked(self): #for me, and not signed
+        if self.is_valid_gateway(self.link_public_key) and not persistence.get_linked(self): #for me, and not signed
             peer = Peer(self.public_key)
             result, errors = self.ensure_receive_money_linked_blocks_available(self, persistence, peer)
 
