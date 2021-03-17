@@ -6,6 +6,8 @@ from blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_bloc
 
 from binascii import hexlify, unhexlify
 
+import logging
+
 class EuroTokenBlock(TrustChainBlock):
     def __init__(self, *args, **kwargs):
         return super(EuroTokenBlock, self).__init__(*args, **kwargs)
@@ -58,10 +60,11 @@ class EuroTokenBlockListener(BlockListener):
         s = super(EuroTokenBlockListener, self).__init__()
         self.my_peer = my_peer
         self.community = community
+        self.logger = logging.getLogger(self.__class__.__name__)
         return s
 
     def received_block(self, block):
-        pass
+        self.logger.warning(f"Got block {block}")
 
     def should_sign(self, block):
         return True

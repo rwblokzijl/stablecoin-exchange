@@ -14,9 +14,9 @@ class EuroTokenCreationBlock(EuroTokenBlock):
             result = ValidationResult.invalid
             errors += ['amount missing from transaction']
 
-        if "payment_id" not in self.transaction:
-            result = ValidationResult.invalid
-            errors += ['payment_id missing from transaction']
+        # if "payment_id" not in self.transaction:
+        #     result = ValidationResult.invalid
+        #     errors += ['payment_id missing from transaction']
 
         if result != ValidationResult.valid:
             return result, errors
@@ -26,5 +26,5 @@ class EuroTokenCreationBlock(EuroTokenBlock):
 class EuroTokenCreationBlockListener(EuroTokenBlockListener):
     BLOCK_CLASS = EuroTokenCreationBlock
 
-    def received_block(self, block):
-        print("GOT CREATION!!!")
+    # def received_block(self, block):
+    #     print("GOT CREATION!!!")

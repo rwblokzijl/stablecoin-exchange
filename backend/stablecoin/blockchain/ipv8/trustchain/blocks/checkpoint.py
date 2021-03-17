@@ -49,9 +49,10 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
         if block is None:
             self.logger.warning(f"Found genesis")
             return ValidationResult.valid, [] #genesis
-        self.logger.warning(f"ensure {block.sequence_number}")
+        self.logger.warning(f"ensure {block.sequence_number-1}")
         blockBefore = persistence.get_block_with_hash(block.previous_hash) # must be available
         if not blockBefore and block.sequence_number != GENESIS_SEQ:
+            self.logger.warning(f"not available, will crawl: {block.sequence_number-1}")
             return ValidationResult.partial_previous, []
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
@@ -120,8 +121,8 @@ class EuroTokenCheckpointBlockListener(EuroTokenBlockListener):
         self.logger = logging.getLogger(self.__class__.__name__)
         return super(EuroTokenCheckpointBlockListener, self).__init__(*args, **kwargs)
 
-    def received_block(self, block):
-        pass
+    # def received_block(self, block):
+    #     pass
 
     def should_sign(self, block):
         return True
