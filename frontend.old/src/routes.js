@@ -1,4 +1,4 @@
-import DashView from './components/Dash.vue'
+// import DashView from './components/Dash.vue'
 import NotFoundView from './components/404.vue'
 
 import ExchangeView from './components/views/user/Exchange.vue'
@@ -6,15 +6,9 @@ import ExchangeView from './components/views/user/Exchange.vue'
 const routes = [
   {
     path: '/',
-    component: DashView,
-    children: [
-      {
-        path: 'exchange',
-        component: ExchangeView,
-        name: 'Exchange',
-        meta: { description: 'Exchange' }
-      }
-    ]
+    component: ExchangeView,
+    name: 'Exchange',
+    meta: { description: 'Exchange' }
   }, {
     // not found handler
     path: '*',

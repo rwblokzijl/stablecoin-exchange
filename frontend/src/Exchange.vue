@@ -1,18 +1,21 @@
 <template>
   <!-- Main content -->
+  <div :class="['wrapper', classes]">
+  <!-- <dash-header :account="account"></dash-header> -->
+  <div class="content-wrapper">
   <section class="content">
     <!-- GitHub hint -->
     <div class="row justify-content-center">
 
       <!-- Info boxes -->
-      <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="col-sm-6 col-xs-12">
         <info-box color-class="bg-green"
                   :icon-classes="['fa', 'fa-plus']"
                   text="Euro -> Eurotoken"
                   v-bind:number="'1.00€ -> ' + rateE2T + 'ET'"></info-box>
       </div>
       <!-- /.col -->
-      <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="col-sm-6 col-xs-12">
         <info-box color-class="bg-blue"
                   :icon-classes="['fa', 'fa-minus']"
                   text="Eurotoken -> Euro"
@@ -25,22 +28,12 @@
       <div class="clearfix visible-sm-block"></div>
 
       <!-- /.col -->
-      <div class="col-md-3 col-sm-6 col-xs-12">
-        <info-box color-class="bg-yellow"
-                  :icon-classes="['fa', 'fa-money']"
-                  text="Token Balance"
-                  v-bind:number="balance.toLocaleString() + 'ET'"></info-box>
-      </div>
-      <!-- /.col -->
     </div>
     <!-- /.row -->
 
     <div class="row">
-      <div class="col-xs-12">
+      <div class="col-sm-6 col-xs-12">
         <h2>Euro -> Eurotoken</h2>
-      </div>
-      <!-- with characthers -->
-      <div class="col-md-6 col-xs-12">
         <label>Amount (Euro)</label>
         <div class="input-group">
           <span class="input-group-addon">
@@ -50,10 +43,6 @@
           placeholder="0.00" @keypress="onlyForCurrencyE2T" >
           <span class="input-group-addon"> : {{exchangeAmountE2TConverted}}ET</span>
         </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6 col-xs-12">
         <div class="form-group">
           <label>Payment Method</label>
           <select class="form-control">
@@ -64,20 +53,10 @@
             <option>option 5</option>
           </select>
         </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6 col-xs-12">
         <a v-on:click="initExchangeE2T" class="btn btn-primary" role="button">Convert</a>
       </div>
-    </div>
-
-    <div class="row">
-      <div class="col-xs-12">
+      <div class="col-sm-6 col-xs-12">
         <h2>Eurotoken -> Euro</h2>
-      </div>
-      <!-- with characthers -->
-      <div class="col-md-6 col-xs-12">
         <label>Amount (EuroToken)</label>
         <div class="input-group">
           <span class="input-group-addon">
@@ -87,18 +66,10 @@
           placeholder="0.00" @keypress="onlyForCurrencyT2E" >
           <span class="input-group-addon"> : € {{exchangeAmountT2EConverted}}</span>
         </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6 col-xs-12">
         <div class="form-group">
           <label>IBAN</label>
           <input class="form-control" placeholder="NL91 ABNA 0417 1643 00" type="text">
         </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-6 col-xs-12">
         <a v-on:click="initExchangeT2E" class="btn btn-primary" role="button">Convert</a>
       </div>
     </div>
@@ -124,7 +95,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="payment in payments" class="even" role="row">
+            <tr v-for="payment in payments" v-bind:key="payment" class="even" role="row">
 
               <td>{{payment.created}}</td>
               <td>{{centToWhole(payment.payout_amount)}} {{payment.payout_currency}}</td>
@@ -201,36 +172,26 @@
     </div>
     <!-- /.row -->
   </section>
+  </div>
   <!-- /.content -->
+  </div>
 </template>
 
 <script>
-import Alert from '../../widgets/Alert'
-import InfoBox from '../../widgets/InfoBox'
-import ProcessInfoBox from '../../widgets/ProcessInfoBox'
+import InfoBox from './InfoBox'
+// import DashHeader from './DashHeader'
+
 const axios = require('axios')
-// import $ from 'jquery'
-// Require needed datatables modules
-// require('datatables.net')
-// require('datatables.net-bs')
-const stores = require('../../shared_state.js')
 
 export default {
   name: 'Exchange',
   components: {
-    Alert,
     InfoBox,
-    ProcessInfoBox
-  },
-  watch: {
-    account: function () {
-      this.updateTransactions()
-    }
+    // DashHeader
   },
   data: function() {
     return {
       payments: {},
-      store: stores.store.state,
       exchangeAmountE2T: null,
       exchangeAmountT2E: null,
       balanceCent: 0,
@@ -241,7 +202,7 @@ export default {
   },
   computed: {
     account() {
-      return this.store.account
+      return "TESTIBAN"
     },
     exchangeAmountE2TConverted() {
       return (Math.floor(this.exchangeAmountE2T * this.rateE2Tcent) / 100).toFixed(2)
@@ -487,6 +448,10 @@ export default {
 }
 </script>
 <style>
+.content-wrapper {
+  margin-left: 0px;
+  /* padding-top: 50px; */
+}
 .info-box {
   cursor: pointer;
 }

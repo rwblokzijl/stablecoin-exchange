@@ -4,9 +4,6 @@
     <!-- Horizontal bar at top. Contains messages, notifications, tasks and user menu -->
     <dash-header :account="account" :accounts="accounts" @account-change="changeAccount" :user="user"></dash-header>
 
-    <!-- Left side column. contains the logo and sidebar -->
-    <sidebar :user="user" />
-
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
       <!-- Content Header (Page header) -->
