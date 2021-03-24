@@ -1,7 +1,6 @@
 <template>
   <!-- Main content -->
-  <div :class="['wrapper', classes]">
-  <!-- <dash-header :account="account"></dash-header> -->
+  <div>
   <div class="content-wrapper">
   <section class="content">
     <!-- GitHub hint -->
@@ -44,14 +43,6 @@
           <span class="input-group-addon"> : {{exchangeAmountE2TConverted}}ET</span>
         </div>
         <div class="form-group">
-          <label>Payment Method</label>
-          <select class="form-control">
-            <option>Ideal</option>
-            <option>option 2</option>
-            <option>option 3</option>
-            <option>option 4</option>
-            <option>option 5</option>
-          </select>
         </div>
         <a v-on:click="initExchangeE2T" class="btn btn-primary" role="button">Convert</a>
       </div>
@@ -75,7 +66,7 @@
     </div>
 
     <div class="col-xs-12">
-      <h2>Open transactions</h2>
+      <h2>Transactions</h2>
     </div>
 
     <div class="row">
@@ -90,49 +81,49 @@
               <th colspan="1" rowspan="1" tabindex="0">Amount</th>
               <th colspan="1" rowspan="1" tabindex="0">Price</th>
               <th colspan="1" rowspan="1" tabindex="0">ID</th>
-              <th colspan="1" rowspan="1" tabindex="0">Status</th>
               <th colspan="1" rowspan="1" tabindex="0">Next Action</th>
+              <th colspan="1" rowspan="1"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="payment in payments" v-bind:key="payment" class="even" role="row">
+            <tr v-for="payment in payments" v-bind:key="payment.payment_id" class="even" role="row">
 
               <td>{{payment.created}}</td>
               <td>{{centToWhole(payment.payout_amount)}} {{payment.payout_currency}}</td>
               <td>{{centToWhole(payment.payment_amount)}} {{payment.payment_currency}}</td>
               <td>
-                <!-- {{payment.payment_id}} -->
+                {{payment.payment_id}}
               </td>
               <td>
-                <!-- {{payment.status_text}} -->
-              </td>
-              <td>
-                <modal v-if="payment.payout_currency === 'eurotoken'" :name="payment.payment_id">
-                  {{payment.status}}
-                  <p v-if="payment.status === 0">
-                  {{CREATE_get_connection_data(payment)}} <br>
-                  <!-- {{payment.payment_transaction_data}} -->
-                  <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
-                  </p>
-                  <p v-else-if="payment.status === 1">
-                  <a @click="start_payment(payment.payment_id)" class="btn">Pay with Tikkie</a>
-                  </p>
-                  <p v-else-if="payment.status === 2">
-                    <!-- {{payment}} -->
-                    {{payment.payment_connection_data}}
-                    <a target="_blank" :href="payment.payment_connection_data.url" class="">Pay tikkie</a>
-                    <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
-                  </p>
-                  <p v-else-if="payment.status === 3">
-                    <!-- {{CREATE_get_connection_data(payment)}} -->
-                    <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
-                  </p>
-                  <p v-else-if="payment.status === 4">
-                  </p>
-                  <a @click="hide(payment.payment_id)">Hide</a>
+                <modal v-if="payment.payout_currency === 'eurotoken'" :name="payment.payment_id" draggable adaptive minWidth="500" maxWidth=90%  resizable>
+                <div class="modal-content">
+                <h1>Buying EuroToken</h1>
+                <h4> Step 1: </h4>
+                <p v-if="payment.status === 0">
+                Connect to the gateway by scanning the QR code with the app: <br> <qrcode :value="CREATE_get_connection_data(payment)"
+                   :options="{ width: 500 }"></qrcode>
+                </p>
+                <p v-else-if="payment.status === 1">
+                <a @click="start_payment(payment.payment_id)" class="btn">Pay with Tikkie</a>
+                </p>
+                <p v-else-if="payment.status === 2">
+                <!-- {{payment}} -->
+                {{payment.payment_connection_data}}
+                <a target="_blank" :href="payment.payment_connection_data.url" class="">Pay tikkie</a>
+                <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
+                </p>
+                <p v-else-if="payment.status === 3">
+                <!-- {{CREATE_get_connection_data(payment)}} -->
+                <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
+                </p>
+                <p v-else-if="payment.status === 4">
+                </p>
+                <a @click="hide(payment.payment_id)">Hide</a>
+                </div>
                 </modal>
-                <modal v-else-if="payment.payout_currency === 'euro'" :name="payment.payment_id">
-                  {{payment.status}}
+                <modal v-else-if="payment.payout_currency === 'euro'"
+                :name="payment.payment_id" class="mmodal">
+                  <h1>Selling EuroToken</h1>
                   <p v-if="payment.status === 0">
                   ???
                   </p>
@@ -155,6 +146,11 @@
                   {{next_action(payment)}}
                 </a>
               </td>
+              <td>
+              <a @click="remove_payment(payment.payment_id)" class="btn btn-danger" role="button">
+                <i class="fa fa-fw fa-trash" aria-hidden="true" ></i>
+              </a>
+            </td>
             </tr>
           </tbody>
           <tfoot>
@@ -163,8 +159,8 @@
               <th colspan="1" rowspan="1">Amount</th>
               <th colspan="1" rowspan="1">Price</th>
               <th colspan="1" rowspan="1">ID</th>
-              <th colspan="1" rowspan="1">Status</th>
               <th colspan="1" rowspan="1">Next Action</th>
+              <th colspan="1" rowspan="1"></th>
             </tr>
           </tfoot>
         </table>
@@ -442,7 +438,6 @@ export default {
     axios.get('/api/exchange/t2e/rate')
       .then(response => { this.rateT2Ecent = response.data.eur })
     this.updatePayments()
-    // this.updateBalance()
     this.timer = setInterval(this.updateTransactions, 1000)
   }
 }
@@ -450,7 +445,7 @@ export default {
 <style>
 .content-wrapper {
   margin-left: 0px;
-  /* padding-top: 50px; */
+  min-height: 0px !important;
 }
 .info-box {
   cursor: pointer;
@@ -465,5 +460,9 @@ export default {
 }
 
 p { word-break: break-all }
+
+.modal-content {
+  padding: 20px;
+}
 
 </style>

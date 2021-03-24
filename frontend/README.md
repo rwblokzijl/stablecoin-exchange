@@ -1,4 +1,4 @@
-# frontend3
+# EuroToken exchange frontend
 
 ## Project setup
 ```
