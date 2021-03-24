@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import copy
+import logging
 
 class Response(ABC):
     pass
@@ -15,6 +16,8 @@ class Response(ABC):
 class StablecoinInteractor:
 
     def __init__(self, name, bank, persistence, blockchain, rateE2T, rateT2E):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
         self.name        = name
         self.bank        = bank
         self.persistence = persistence
@@ -71,11 +74,11 @@ class StablecoinInteractor:
         transaction = self.persistence.get_payment_by_id(payment_id)
 
         if transaction is None:
-            print("no transaction found for id " + payment_id)
+            self.logger.info("no transaction found for id " + payment_id)
             return None
 
         if transaction["status"] not in [Transaction.Status.CREATED, Transaction.Status.PAYMENT_READY]:
-            print("create_connect: Transaction in wrong state for id " + payment_id, transaction["status"])
+            self.logger.info("create_connect: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
         transaction.add_payout_connection_data(payout_connection_data={
@@ -99,11 +102,11 @@ class StablecoinInteractor:
         transaction = self.persistence.get_payment_by_id(payment_id)
 
         if transaction is None:
-            print("no transaction found for id " + payment_id)
+            self.logger.info("no transaction found for id " + payment_id)
             return None
 
         if transaction["status"] != Transaction.Status.PAYMENT_READY:
-            print("create_start_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
+            self.logger.info("create_start_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
@@ -125,11 +128,11 @@ class StablecoinInteractor:
         transaction = self.persistence.get_payment_by_id(payment_id)
 
         if transaction is None:
-            print("no transaction found for id " + payment_id)
+            self.logger.info("no transaction found for id " + payment_id)
             return None
 
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
-            print("create_finish_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
+            self.logger.info("create_finish_payment: Transaction in wrong state for id " + payment_id, transaction["status"])
             return None
 
         payment_provider = self.provider_map[transaction["payment_provider"]]
@@ -146,12 +149,12 @@ class StablecoinInteractor:
             payout_id = payout_provider.initiate_payment(
                     transaction["payout_connection_data"],
                     transaction["payout_amount"], payment_id)
-            # print(payout_id) # TODO: get block id here, query db for latest block (try to make this safe)
+            # self.logger.info(payout_id) # TODO: get block id here, query db for latest block (try to make this safe)
             # if payout_id:
             transaction.payout_done("ID NOT IMPLEMENTED")
 
             def when_finished(fut):
-                print("Delivery: ", fut.result())
+                self.logger.info("Delivery: ", fut.result())
 
             payout_id.add_done_callback(when_finished)
 
@@ -196,18 +199,16 @@ class StablecoinInteractor:
         else:
             transaction = self.persistence.get_payment_by_id(payment_id)
             if transaction is None:
-                print("no transaction found for id " + payment_id)
+                self.logger.info("no transaction found for id " + payment_id)
                 return False
 
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
-            print("destroy_pay: Transaction in wrong state for id " + payment_id, transaction["status"])
+            self.logger.info("destroy_pay: Transaction in wrong state for id " + payment_id, transaction["status"])
             return False
-
-        print("payment recieved")
 
         if transaction["amount"] != amount:
             "Incorrect amount"
-            print("incorrect amount transfered, reject block")
+            self.logger.info("incorrect amount transfered, reject block")
             return False
 
         transaction.confirm_payment(payment_transaction_data=pubkey)
@@ -242,9 +243,9 @@ class StablecoinInteractor:
         return self.blockchain.get_balance(wallet)
 
     def print_struct(self):
-        print(self.bank)
-        print(self.persistence)
-        print(self.blockchain)
+        self.logger.warning(self.bank)
+        self.logger.warning(self.persistence)
+        self.logger.warning(self.blockchain)
 
     def get_exchange_rate_col_to_tok(self, collatoral_amount_cent):
         if not type(collatoral_amount_cent) == int:

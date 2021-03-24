@@ -11,4 +11,5 @@ test:
 run:
 	pipenv run python run_coin.py
 
-
+coverage:
+	cd stablecoin && pipenv run coverage run -m pytest --ignore pyipv8 && pipenv run coverage html -i && brave-browser htmlcov/index.html

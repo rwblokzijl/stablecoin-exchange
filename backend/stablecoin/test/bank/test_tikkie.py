@@ -8,7 +8,7 @@ from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 
 from aiohttp import web
 
-allTests = False
+allTests = True
 
 class TestTikkie(unittest.TestCase):
 

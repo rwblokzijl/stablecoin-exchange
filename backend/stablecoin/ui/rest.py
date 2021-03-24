@@ -376,9 +376,6 @@ class RootEndpoint(BaseEndpoint):
 
 class MyRESTManager(RESTManager):
 
-    def __str__(self) -> str:
-        return "rest"
-
     async def start(self, ip='0.0.0.0', port=8000):
         """
         Starts the HTTP API with the listen port as specified in the session configuration.

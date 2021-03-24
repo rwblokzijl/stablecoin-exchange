@@ -2,6 +2,7 @@
 from pyipv8.ipv8.test.base import TestBase
 
 from pyipv8.ipv8.test.attestation.trustchain.test_block import TestBlock, MockDatabase, TestTrustChainBlock
+from pyipv8.ipv8.attestation.trustchain.block     import ValidationResult
 
 
 class TestBalance(TestBase):

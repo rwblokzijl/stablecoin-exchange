@@ -13,6 +13,9 @@ class TestBlockChain(Blockchain):
                 "timeout" : 3000,
                 }
 
+    def get_connection_info(self):
+        return None
+
     def get_available_balance(self):
         return 100
 

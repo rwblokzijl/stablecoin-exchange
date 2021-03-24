@@ -11,7 +11,6 @@ from bank.tikkie                          import Tikkie
 from persistence.inmemorypersistence      import InMemoryPersistence
 from blockchain.ipv8.eurotoken.community  import EuroTokenCommunity
 from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
-
 from ui.rest import MyRESTManager
 
 from pyipv8.ipv8.configuration import get_default_configuration

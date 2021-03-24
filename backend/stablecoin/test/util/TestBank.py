@@ -5,12 +5,10 @@ class TestBank(Bank):
     def __str__(self):
         return "TestBank"
 
-    def create_payment_request(self, amount):
+    def create_payment_request(self, amount, payment_id):
         return {
-                "link"   : "https://pay.moeneyyys.shrnarf/payment/<id>",
-                "collatoral_amount_cent" : amount,
-                "provider" : "bank",
-                "timeout" : 3000,
+                "url"   : f"https://pay.moeneyyys.shrnarf/payment/{payment_id}>",
+                "payment_id": payment_id
                 }
 
     def initiate_payment(self, account, amount):
@@ -25,8 +23,8 @@ class TestBank(Bank):
     def list_transactions(self):
         return list()
 
-    def payment_request_status(self, id):
-        return "done"
+    def payment_request_status(self, pid):
+        return pid
 
-    def attempt_payment_done(self, id):
-        return ""
+    def attempt_payment_done(self, pid):
+        return pid
