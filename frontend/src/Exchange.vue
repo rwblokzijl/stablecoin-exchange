@@ -95,34 +95,38 @@
                 {{payment.payment_id}}
               </td>
               <td>
-                <modal v-if="payment.payout_currency === 'eurotoken'" :name="payment.payment_id" draggable adaptive minWidth="500" maxWidth=90%  resizable>
-                <div class="modal-content">
-                <h1>Buying EuroToken</h1>
-                <h4> Step 1: </h4>
-                <p v-if="payment.status === 0">
-                Connect to the gateway by scanning the QR code with the app: <br> <qrcode :value="CREATE_get_connection_data(payment)"
-                   :options="{ width: 500 }"></qrcode>
-                </p>
-                <p v-else-if="payment.status === 1">
-                <a @click="start_payment(payment.payment_id)" class="btn">Pay with Tikkie</a>
-                </p>
-                <p v-else-if="payment.status === 2">
-                <!-- {{payment}} -->
-                {{payment.payment_connection_data}}
-                <a target="_blank" :href="payment.payment_connection_data.url" class="">Pay tikkie</a>
-                <a @click="finish_payment(payment.payment_id)" class="btn">Payment complete</a>
-                </p>
-                <p v-else-if="payment.status === 3">
-                <!-- {{CREATE_get_connection_data(payment)}} -->
-                <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 200 }"></qrcode>
-                </p>
-                <p v-else-if="payment.status === 4">
-                </p>
-                <a @click="hide(payment.payment_id)">Hide</a>
+                <modal v-if="payment.payout_currency === 'eurotoken'"
+                :name="payment.payment_id" draggable adaptive minHeight="600" minWidth="500"
+                maxWidth=90%  resizable>
+                <div class="div-modal-content">
+                  <h1>Buying EuroToken</h1>
+                  <h4 > Step {{payment.status + 1}}: </h4>
+                  <p v-if="payment.status === 0">
+                  Connect to the gateway by scanning the QR code with the app: <br>
+                  <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 400 }"></qrcode>
+                  </p>
+                  <p v-else-if="payment.status === 1">
+                  Choose payment method: <br>
+                  <a @click="start_payment(payment.payment_id)" class="btn">Pay with Tikkie</a>
+                  </p>
+                  <p v-else-if="payment.status === 2">
+                  Please pay: <br>
+                  <a target="_blank" :href="payment.payment_connection_data.url" class="btn btn-primary">Pay tikkie</a> <br>
+                  <a @click="finish_payment(payment.payment_id)" class="btn btn-light">I payed</a>
+                  </p>
+                  <p v-else-if="payment.status === 3">
+                  <!-- {{CREATE_get_connection_data(payment)}} -->
+                  <qrcode :value="CREATE_get_connection_data(payment)" :options="{ width: 400 }"></qrcode>
+                  </p>
+                  <p v-else-if="payment.status === 4">
+                  </p>
+                  <a @click="hide(payment.payment_id)">Hide</a>
                 </div>
                 </modal>
                 <modal v-else-if="payment.payout_currency === 'euro'"
-                :name="payment.payment_id" class="mmodal">
+                       :name="payment.payment_id" draggable adaptive
+                       minHeight="600" minWidth="500" maxWidth=90% resizable>
+                <div class="div-modal-content">
                   <h1>Selling EuroToken</h1>
                   <p v-if="payment.status === 0">
                   ???
@@ -131,26 +135,27 @@
                   ???
                   </p>
                   <p v-else-if="payment.status === 2">
-                    {{DESTROY_payment_info(payment)}}
-                    <qrcode :value="DESTROY_payment_info(payment)" :options="{ width: 200 }"></qrcode>
+                  Please pay by scanning the code with the app:
+                  <qrcode :value="DESTROY_payment_info(payment)" :options="{ width: 400 }"></qrcode>
                   </p>
                   <p v-else-if="payment.status === 3">
-                    ??
+                  ??
                   </p>
                   <p v-else-if="payment.status === 4">
-                    ??
+                  ??
                   </p>
                   <a @click="hide(payment.payment_id)">Hide</a>
+                </div>
                 </modal>
                 <a @click="show(payment.payment_id)" :disabled="payment.status === 4" class="btn btn-primary" role="button">
                   {{next_action(payment)}}
                 </a>
               </td>
               <td>
-              <a @click="remove_payment(payment.payment_id)" class="btn btn-danger" role="button">
-                <i class="fa fa-fw fa-trash" aria-hidden="true" ></i>
-              </a>
-            </td>
+                <a @click="remove_payment(payment.payment_id)" class="btn btn-danger" role="button">
+                  <i class="fa fa-fw fa-trash" aria-hidden="true" ></i>
+                </a>
+              </td>
             </tr>
           </tbody>
           <tfoot>
@@ -461,8 +466,9 @@ export default {
 
 p { word-break: break-all }
 
-.modal-content {
+.div-modal-content {
   padding: 20px;
+
 }
 
 </style>
