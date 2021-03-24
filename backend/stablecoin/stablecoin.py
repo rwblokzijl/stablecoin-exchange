@@ -1,7 +1,3 @@
-from bank.bank               import Bank
-from blockchain.blockchain   import Blockchain
-from persistence.persistence import Persistence
-from ui.ui                   import UI
 from transaction             import Transaction
 
 from abc import ABC, abstractmethod

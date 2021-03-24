@@ -9,6 +9,7 @@ jedi = "*"
 rope = "*"
 pytest-aiohttp = "*"
 asynctest = "*"
+coverage = "*"
 
 [packages]
 requests-oauthlib = "*"

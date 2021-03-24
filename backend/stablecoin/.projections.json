@@ -1,0 +1,4 @@
+{
+  "*.py": {"alternate": "test{dirname}/test_{basename}.py"},
+  "test/**/test_*.py": {"alternate": "{}.py"}
+}

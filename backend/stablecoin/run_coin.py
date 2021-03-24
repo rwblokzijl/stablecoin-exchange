@@ -33,6 +33,9 @@ DOCKER = bool(int(os.environ.get('DOCKER', 0)))
 def resolve_user(path):
     return os.path.expanduser(path)
 
+def get_rest_manager(interactor):
+    return MyRESTManager(interactor)
+
 async def start_communities():
     rest_port = 8000
     ipv8_port = 8090
@@ -81,7 +84,7 @@ async def start_communities():
     ipv8 = IPv8(configuration, extra_communities={'MyTrustChainCommunity': MyTrustChainCommunity, 'EuroTokenCommunity': EuroTokenCommunity})
     await ipv8.start()
     interactor = buildSI(ipv8, hostname, ipv8_port)
-    rest_manager = MyRESTManager(interactor)
+    rest_manager = get_rest_manager(interactor)
     await rest_manager.start(ip_address, rest_port)
 
 def buildSI(ipv8, address, ipv8_port):
@@ -115,15 +118,11 @@ def buildSI(ipv8, address, ipv8_port):
     return s
 
 def main():
-
-    s = buildSI()
-
-    ui          = REST(s)
-    ui.start()
-
-if __name__ == '__main__':
     ensure_future(start_communities())
     get_event_loop().run_forever()
+
+if __name__ == '__main__':
+    main()
 
 
 
