@@ -200,16 +200,16 @@ class StablecoinInteractor:
             transaction = self.persistence.get_payment_by_id(payment_id)
             if transaction is None:
                 self.logger.info("no transaction found for id " + payment_id)
-                return False
+                return None
 
         if transaction["status"] != Transaction.Status.PAYMENT_PENDING:
             self.logger.info("destroy_pay: Transaction in wrong state for id " + payment_id, transaction["status"])
-            return False
+            return None
 
         if transaction["amount"] != amount:
             "Incorrect amount"
             self.logger.info("incorrect amount transfered, reject block")
-            return False
+            return None
 
         transaction.confirm_payment(payment_transaction_data=pubkey)
 
@@ -227,20 +227,17 @@ class StablecoinInteractor:
 
     "Other"
 
-    def get_wallet_transactions(self, wallet):
-        return [transaction for transaction in self.persistence.get_all().values() if
-                (transaction['payment_provider'] == 'blockchain' and transaction.get("counterparty_account") == wallet) or
-                (transaction['payout_provider'] == 'blockchain' and transaction["payout_account"] == wallet)
-                ]
+    # def get_wallet_transactions(self, wallet):
+    #     return [transaction for transaction in self.persistence.get_all().values() if
+    #             (transaction['payment_provider'] == 'blockchain' and transaction.get("counterparty_account") == wallet) or
+    #             (transaction['payout_provider'] == 'blockchain' and transaction["payout_account"] == wallet)
+    #             ]
 
-    def get_iban_transactions(self, iban):
-        return [transaction for transaction in self.persistence.get_all().values() if
-                (transaction['payment_provider'] == 'bank' and transaction.get("counterparty_account") == iban) or
-                (transaction['payout_provider'] == 'bank' and transaction["payout_account"] == iban)
-                ]
-
-    def get_wallet_balance(self, wallet):
-        return self.blockchain.get_balance(wallet)
+    # def get_iban_transactions(self, iban):
+    #     return [transaction for transaction in self.persistence.get_all().values() if
+    #             (transaction['payment_provider'] == 'bank' and transaction.get("counterparty_account") == iban) or
+    #             (transaction['payout_provider'] == 'bank' and transaction["payout_account"] == iban)
+    #             ]
 
     def print_struct(self):
         self.logger.warning(self.bank)

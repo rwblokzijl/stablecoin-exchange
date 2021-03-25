@@ -68,9 +68,6 @@ class APIEndpoint(BaseEndpoint):
             web.get(  '/exchange/t2e/rate',    self.exchange_rate_token_to_euro),
             #"get payment status"
             web.get(  '/exchange/status',     self.exchange_status),
-
-            #"FOR TESTING"
-            web.post( '/exchange/complete', self.complete_payment), #tested
         ])
 
     # async def tikkie_callback(self, request):
@@ -78,39 +75,16 @@ class APIEndpoint(BaseEndpoint):
     #     return web.json_response({})
 
     def get_status_dict(self, t):
-        transaction = self.clean_transaction_status(copy(t.data)) #copy
-
-        return {
-            "gateway_name":             self.stablecoin_interactor.name,
-            "status":                   transaction['status'],
-            "status_text":              transaction['status_text'],
-            "created":                  transaction['created_on'],
-            "payment_amount":           transaction['amount'],
-            "payout_amount":            transaction['payout_amount'],
-            "payment_currency":         transaction['payment_currency'],
-            "payout_currency":          transaction['payout_currency'],
-            "payment_id":               transaction['payment_id'],
-
-            "gateway_connection_data":  transaction.get('gateway_connection_data', None),
-
-            "payment_connection_data":  transaction.get('payment_connection_data', None),
-            "payment_started_on":       transaction.get('payment_started_on', None),
-
-            "payment_transaction_data": transaction.get('payment_transaction_data', None),
-            "payment_confirmed_on":     transaction.get('payment_confirmed_on', None),
-
-            "payout_connection_data":   transaction.get('payout_connection_data', None),
-            "payout_transaction_data":  transaction.get('payout_transaction_data', None),
-            "payout_done_on":           transaction.get('payout_done_on', None),
-            }
-
+        ans = t.serialise()
+        ans.update({ "gateway_name": self.stablecoin_interactor.name })
+        return ans
 
     "Creation"
     # Step 1 -> returns info to connect to gateway over ipv8
     async def REST_CREATE_initiate(self, request):
         data = dict(await request.json())
 
-        collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
+        collatoral_cent = self.validate_euro_to_token_request_collatoral(data)
 
         t = self.stablecoin_interactor.CREATE_initiate(collatoral_cent)
 
@@ -126,14 +100,11 @@ class APIEndpoint(BaseEndpoint):
 
         data = dict(await request.json())
 
-        if "payment_id" not in data:
-            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
-        payment_id = data["payment_id"]
-
+        payment_id = self.validate_payment_id(data)
         transaction = self.stablecoin_interactor.CREATE_start_payment(payment_id)
 
         if not transaction:
-            raise web.HTTPNotFound(reason="Transaction not found")
+            raise web.HTTPBadRequest(reason="Wrong state")
 
         response = self.get_status_dict(transaction)
 
@@ -143,14 +114,12 @@ class APIEndpoint(BaseEndpoint):
     async def REST_CREATE_finish_payment(self, request):
         data = dict(await request.json())
 
-        if "payment_id" not in data:
-            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
-        payment_id = data["payment_id"]
-
+        payment_id = self.validate_payment_id(data)
         transaction = self.stablecoin_interactor.CREATE_finish_payment(payment_id)
 
         if not transaction:
-            raise web.HTTPNotFound(reason="Transaction not found")
+            raise web.HTTPBadRequest(reason="Wrong state")
+
 
         response = self.get_status_dict(transaction)
 
@@ -173,28 +142,10 @@ class APIEndpoint(BaseEndpoint):
     # Step 2 -> user connects through ipv8 and sends the funds providing the payment id
     # Over trustchain
 
-
-    " Test functions "
-    async def complete_payment(self, request):
-        data = dict(await request.json())
-        if "payment_id" not in data:
-            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
-        if "counterparty" not in data:
-            raise web.HTTPBadRequest(reason="Missing 'counterparty'")
-        status = self.stablecoin_interactor.complete_payment(data["payment_id"], data["counterparty"])
-
-        if not status:
-            raise web.HTTPNotFound(reason="Transaction not found")
-
-        if status:
-            return web.json_response()
-        else:
-            raise web.HTTPBadRequest(reason="Coundn't complete the transaction")
-
     "Exchange E->T"
     # Get exchange rate
     async def exchange_rate_euro_to_token(self, request):
-        base = request.query.get("base", 100)
+        base = request.query.get("base", None)
         try:
             base = int(base)
         except:
@@ -202,39 +153,29 @@ class APIEndpoint(BaseEndpoint):
         ans  = self.stablecoin_interactor.get_exchange_rate_col_to_tok(base)
         return web.json_response({"eur": base, "token": ans})
 
-    # Start Creation transaction
-    async def exchange_euro_to_token(self, request):
-        data = dict(await request.json())
-
-        collatoral_cent   = self.validate_euro_to_token_request_collatoral(data)
-        dest_wallet       = self.validate_euro_to_token_destination_address(data)
-        temp_counterparty = data.get("counterparty", None)
-
-        payment_data = self.start_creation(collatoral_cent, dest_wallet, temp_counterparty)
-
-        return web.json_response(payment_data)
-
     # Get info on existing transaction
     async def exchange_status(self, request):
-        if "payment_id" not in request.query:
-            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
-
-        payment_id = request.query["payment_id"]
-
+        payment_id = self.validate_payment_id(request.query)
         transaction = self.stablecoin_interactor.get_transaction(payment_id)
 
-        if not transaction:
-            raise web.HTTPNotFound(reason="Transaction not found")
-
         response = self.get_status_dict(transaction)
-
-        for item, value in response.items():
-            if type(value) is bytes:
-                print(item,  ": ",  type(value), value)
 
         return web.json_response(response)
 
     # Helpers
+
+    def validate_payment_id(self, request_data):
+        if "payment_id" not in request_data:
+            raise web.HTTPBadRequest(reason="Missing 'payment_id'")
+
+        payment_id = request_data["payment_id"]
+
+        transaction = self.stablecoin_interactor.get_transaction(payment_id)
+        if not transaction:
+            raise web.HTTPNotFound(reason="Transaction not found")
+
+        return payment_id
+
     def validate_euro_to_token_request_collatoral(self, request_data):
         if not "collatoral_cent" in request_data:
             raise web.HTTPBadRequest(reason="Missing 'collatoral_cent' field.")
@@ -243,66 +184,16 @@ class APIEndpoint(BaseEndpoint):
         except ValueError:
             raise web.HTTPBadRequest(reason="'collatoral_cent' field must be an integer")
 
-    def validate_euro_to_token_destination_address(self, request_data):
-        if not "dest_wallet" in request_data:
-            raise web.HTTPBadRequest(reason="Missing 'dest_wallet' field.")
-        return request_data["dest_wallet"]
-
-    def clean_transaction_status(self, transaction_data):
-        if "status" in transaction_data:
-            transaction_data["status_text"] = self.clean_status(transaction_data["status"])
-            transaction_data["status"]      = transaction_data["status"].value
-        return transaction_data
-
-    def clean_status(self, status):
-        if status == Transaction.Status.CREATED:
-            return "Transaction created"
-        elif status == Transaction.Status.PAYMENT_READY:
-            return "Ready for payment"
-        elif status == Transaction.Status.PAYMENT_PENDING:
-            return "Waiting for payment"
-        elif status == Transaction.Status.PAYMENT_DONE:
-            return "Payment Done"
-        elif status == Transaction.Status.PAYOUT_DONE:
-            return "Payout Done"
-        else:
-            return "Invalid Status"
-
-    def start_creation(self, collatoral_cent, dest_wallet, temp_counterparty=None):
-        try:
-            data = self.stablecoin_interactor.initiate_creation(
-                    collatoral_amount_cent=collatoral_cent,
-                    destination_wallet=dest_wallet,
-                    temp_counterparty=temp_counterparty
-                    )
-            data = self.clean_transaction_status(data)
-            return data
-
-        except StablecoinInteractor.CommunicationError:
-            raise web.HTTPInternalServerError()
-
     "Exchange T->E"
     # Get exchange rate
     async def exchange_rate_token_to_euro(self, request):
-        base = request.query.get("base", 100)
+        base = request.query.get("base", None)
         try:
             base = int(base)
         except:
             raise web.HTTPBadRequest(reason="'base' should be an integer amount of cents")
         ans  = self.stablecoin_interactor.get_exchange_rate_tok_to_col(base)
         return web.json_response({"token": base, "eur": ans})
-
-    # Start Destruction transaction
-    async def exchange_token_to_euro(self, request):
-        data = dict(await request.json())
-
-        token_amount_cent = self.validate_token_to_euro_token_amount(data)
-        iban              = self.validate_token_to_euro_iban(data)
-        temp_counterparty = data.get("counterparty", None)
-
-        payment_data      = self.start_destruction(token_amount_cent, iban, temp_counterparty)
-
-        return web.json_response(payment_data)
 
     # Helpers
     def validate_token_to_euro_token_amount(self, request_data):
@@ -317,49 +208,6 @@ class APIEndpoint(BaseEndpoint):
         if not "destination_iban" in request_data:
             raise web.HTTPBadRequest(reason="Missing 'destination_iban' field.")
         return request_data["destination_iban"]
-
-    def start_destruction(self, token_amount_cent, iban, temp_counterparty=None):
-        try:
-            data =  self.stablecoin_interactor.initiate_destruction(
-                    token_amount_cent=token_amount_cent,
-                    destination_iban=iban,
-                    temp_counterparty=temp_counterparty
-                    )
-            data = self.clean_transaction_status(data)
-            return data
-        except StablecoinInteractor.CommunicationError:
-            raise web.HTTPInternalServerError()
-
-    async def get_iban_transactions(self, request):
-        if "iban" not in request.query:
-            raise web.HTTPBadRequest(reason="Missing 'iban'")
-        iban = request.query["iban"]
-        transactions = self.stablecoin_interactor.get_iban_transactions(iban)
-        transactions2 = [self.clean_transaction_status(t.get_data()) for t in transactions]
-        return web.json_response(transactions2)
-
-    async def get_wallet_transactions(self, request):
-        if "wallet" not in request.query:
-            raise web.HTTPBadRequest(reason="Missing 'wallet'")
-        wallet = request.query["wallet"]
-        transactions = self.stablecoin_interactor.get_wallet_transactions(wallet)
-        transactions2 = [self.clean_transaction_status(t.get_data()) for t in transactions]
-        return web.json_response(transactions2)
-
-    async def get_wallet_balance(self, request):
-        if "wallet" not in request.query:
-            raise web.HTTPBadRequest(reason="Missing 'wallet'")
-        wallet = request.query["wallet"]
-
-        balance = self.stablecoin_interactor.get_wallet_balance(wallet)
-
-        return web.json_response({
-            "wallet": wallet,
-            "balance":balance
-            })
-
-    # def start(self):
-    #     web.run_app(self.app, port=8000)
 
 class RootEndpoint(BaseEndpoint):
     """

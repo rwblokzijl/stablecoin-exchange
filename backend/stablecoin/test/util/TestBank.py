@@ -11,7 +11,7 @@ class TestBank(Bank):
                 "payment_id": payment_id
                 }
 
-    def initiate_payment(self, account, amount):
+    def initiate_payment(self, account, amount, payment_id):
         pass
 
     def check_payment_status(self, tid):

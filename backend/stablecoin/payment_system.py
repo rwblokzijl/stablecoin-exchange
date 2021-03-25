@@ -1,14 +1,19 @@
 from abc import ABC, abstractmethod
 
+import logging
+
 class PaymentSystem(ABC):
+
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     "Set the stablecoin instance"
     def set_callback_instance(self, stablecoin_instance):
         self.stablecoin = stablecoin_instance
 
     def get_post_callback_routes(self):
-        pass
         """ return: {url : callback_function, ...} """
+        pass
 
     "Helpers"
     @abstractmethod
@@ -22,14 +27,9 @@ class PaymentSystem(ABC):
     def create_payment_request(self, amount):
         "Returns payment identifier string if succesful"
 
-    "Step 1: Waiting"
-    @abstractmethod
-    def payment_request_status(self, identifier):
-        "Returns status of transaction???, will include payee when payment successful"
-
     "Payout End"
 
-    "Step 4: Validate the request"
+    "Step 3: Validate the request is payed"
     @abstractmethod
     def attempt_payment_done(self):
         pass
@@ -39,16 +39,5 @@ class PaymentSystem(ABC):
     def initiate_payment(self, account, amount):
         "Returns true if succesful"
         pass
-
-    "Bookkeeping functions"
-
-    @abstractmethod
-    def list_transactions(self, account):
-        pass
-
-    @abstractmethod
-    def get_available_balance(self):
-        pass
-
 
 

@@ -11,9 +11,9 @@ class Tikkie(Bank):
         return {v:ans[k] for k, v in { 'url': 'url', 'paymentRequestToken': 'payment_id'}.items()}
 
     def initiate_payment(self, account, amount, payment_id):
-        print(f"PAYOUT: {amount} to {account}")
-        print(f"PAYOUT: {amount} to {account}")
-        print(f"PAYOUT: {amount} to {account}")
+        self.logger.info(f"PAYOUT: {amount} to {account}")
+        self.logger.info(f"PAYOUT: {amount} to {account}")
+        self.logger.info(f"PAYOUT: {amount} to {account}")
         return None
 
     def attempt_payment_done(self, paymentRequestToken):
@@ -27,12 +27,6 @@ class Tikkie(Bank):
         url = self.get_url('paymentrequests') + f"/{paymentRequestToken}"
         x = requests.get(url, headers=self.get_headers())
         return x.json()
-
-    def list_transactions(self):
-        pass
-
-    def get_available_balance(self):
-        pass
 
     def get_transactions(self):
         url = self.get_url('paymentrequests')
@@ -74,9 +68,13 @@ class Tikkie(Bank):
         x = requests.post(url, headers=self.get_headers(), json=data)
         return x
 
-    def __init__(self, abn_api_path, sandbox_key_path, global_url, url="/api/exchange/e2t/tikkie_callback", production=False, production_key_path=None):
+    def __init__(self, abn_api_path, sandbox_key_path, global_url,
+            url="/api/exchange/e2t/tikkie_callback", production=False,
+            production_key_path=None, testing=False):
         if production and not production_key_path:
-            raise
+            raise self.MissingKeyError("Missing production key")
+
+        self.testing = testing
 
         self.production          = production
         self.sandbox_key_path    = sandbox_key_path
@@ -87,18 +85,24 @@ class Tikkie(Bank):
 
         self.abn_api_key        = self.get_key(abn_api_path)
         if self.production:
-            self.production_key = self.get_key(production_key_path)
+            try:
+                self.production_key = self.get_key(production_key_path)
+            except FileNotFoundError:
+                self.production_key = None
             if not self.production_key:
-                raise
+                raise self.InvalidKeyError(f"Invalid key at {self.production_key_path}")
         else:
             self.sandbox_key    = self.get_key(sandbox_key_path) or self.generate_new_sandbox_key()
-        self.register_payment_listener()
+        if not self.testing:
+            self.register_payment_listener()
+        return super(Tikkie, self).__init__()
 
     def generate_new_sandbox_key(self):
         url = self.get_url("sandboxapps")
         x = requests.post(url, headers={'API-Key': self.abn_api_key})
         if x.status_code != 201:
-            raise
+            self.logger.info(x.text)
+            raise self.InvalidKeyError(f"Invalid key at {self.abn_api_path}")
         else:
             key = x.json()["appToken"]
             with open(Path(self.sandbox_key_path).expanduser(), 'w') as filetowrite:
@@ -128,4 +132,10 @@ class Tikkie(Bank):
 
     def __str__(self):
         return "tikkie"
+
+    class MissingKeyError(Exception):
+        pass
+
+    class InvalidKeyError(Exception):
+        pass
 

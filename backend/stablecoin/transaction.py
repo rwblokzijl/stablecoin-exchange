@@ -19,7 +19,7 @@ class Transaction:
         return key in self.data
 
     def get(self, key, default=None):
-        return self.data.get(key)
+        return self.data.get(key, default)
 
     def __getitem__(self, key):
         return self.data[key]
@@ -84,16 +84,6 @@ class Transaction:
 
         self.data["status"]                  = self.Status.PAYOUT_DONE
 
-    def get(self, key, default=None):
-        if key in self.data:
-            return self.data[key]
-        else:
-            return default
-
-    def get_data(self):
-        data = copy(self.data)
-        return(data)
-
     def generate_payment_id(self, payment_data):
         """
         Seed for ID:
@@ -113,5 +103,46 @@ class Transaction:
         return base64.b64encode(hashlib.sha1(
             serialised
             ).digest()).decode("utf-8")
+
+    def clean_status(self):
+        if self["status"] == Transaction.Status.CREATED:
+            return "Transaction created"
+        elif self["status"] == Transaction.Status.PAYMENT_READY:
+            return "Ready for payment"
+        elif self["status"] == Transaction.Status.PAYMENT_PENDING:
+            return "Waiting for payment"
+        elif self["status"] == Transaction.Status.PAYMENT_DONE:
+            return "Payment Done"
+        elif self["status"] == Transaction.Status.PAYOUT_DONE:
+            return "Payout Done"
+        else:
+            return "Invalid Status"
+
+    def __str__(self):
+        return str(self.serialise())
+
+    def serialise(self):
+        return {
+            "status_text":              self.clean_status(),
+            "status":                   self["status"].value,
+            "created":                  self['created_on'],
+            "payment_amount":           self['amount'],
+            "payout_amount":            self['payout_amount'],
+            "payment_currency":         self['payment_currency'],
+            "payout_currency":          self['payout_currency'],
+            "payment_id":               self['payment_id'],
+
+            "gateway_connection_data":  self.get('gateway_connection_data', None),
+
+            "payment_connection_data":  self.get('payment_connection_data', None),
+            "payment_started_on":       self.get('payment_started_on', None),
+
+            "payment_transaction_data": self.get('payment_transaction_data', None),
+            "payment_confirmed_on":     self.get('payment_confirmed_on', None),
+
+            "payout_connection_data":   self.get('payout_connection_data', None),
+            "payout_transaction_data":  self.get('payout_transaction_data', None),
+            "payout_done_on":           self.get('payout_done_on', None),
+            }
 
 

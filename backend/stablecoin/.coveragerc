@@ -5,3 +5,8 @@ omit =
         *test*
         *pyipv8*
         *virtualenvs*
+
+[report]
+exclude_lines =
+        pass
+

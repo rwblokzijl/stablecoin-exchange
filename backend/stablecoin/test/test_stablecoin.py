@@ -7,6 +7,7 @@ from transaction               import Transaction
 from persistence.inmemorypersistence      import InMemoryPersistence
 from test.util.captured_output import captured_output
 from test.util.dict_ops        import extractDictAFromB
+
 from test.util.TestPersistence import TestPersistence
 from test.util.TestBank        import TestBank
 from test.util.TestBlockchain  import TestBlockChain
@@ -110,23 +111,6 @@ class TestStablecoinBusinessLogicCreation(TestStablecoinBusinessLogic):
         # assert
         self.assertNotEqual(payment_id1, payment_id2)
 
-    #def test_finishTransaction_returnsSameTransaction(self):
-    #    #setup
-    #    collatoral_amount_cent = 100
-    #    transaction = {
-    #            "status" : 3000,
-    #            }
-    #    si = StablecoinInteractor(bank=TestBank(), persistence=TestPersistence(), blockchain=Mock() )
-
-    #    # excecute
-    #    transaction_data1 = si.CREATE_initiate(collatoral_amount_cent")
-    #    transaction_data2 = si.attempt_finish_creation_payment(transaction_data1["payment_id"])
-        #setup
-
-    #    # assert
-    #    self.assertEqual(transaction_data1, transaction_data2)
-    #    return transaction_data1["payment_id"]
-
     def test_normalProgressionUntilPayout(self):
         blockchain = Mock()
         si = self.getInteractor(blockchain=blockchain)
@@ -166,129 +150,63 @@ class TestStablecoinBusinessLogicCreation(TestStablecoinBusinessLogic):
 
         self.assertFalse(blockchain.transfer.called)
 
+    def test_wrong_id_connect(self):
+        ans = self.si.CREATE_connect("MISSING", "KEY", "IP", "PORT")
+        self.assertEqual(ans, None)
+
+    def test_wrong_id_start_payment(self):
+        ans = self.si.CREATE_start_payment("MISSING")
+        self.assertEqual(ans, None)
+
+    def test_wrong_id_finish_payment(self):
+        ans = self.si.CREATE_finish_payment("MISSING")
+        self.assertEqual(ans, None)
+
+    def test_wrong_state_connect(self):
+        data = self.si.CREATE_initiate(100)
+        self.si.CREATE_connect(data["payment_id"], "KEY", "IP", "PORT")
+        self.si.CREATE_start_payment(data["payment_id"])
+        self.si.CREATE_finish_payment(data["payment_id"])
+
+        ans = self.si.CREATE_connect(data["payment_id"], "KEY", "IP", "PORT")
+        self.assertEqual(ans, None)
+
+    def test_wrong_state_payment(self):
+        data = self.si.CREATE_initiate(100)
+        ans = self.si.CREATE_start_payment(data["payment_id"])
+        self.assertEqual(ans, None)
+
+    def test_wrong_state_finish(self):
+        data = self.si.CREATE_initiate(100)
+        ans = self.si.CREATE_finish_payment(data["payment_id"])
+        self.assertEqual(ans, None)
+
 class TestStablecoinBusinessLogicDestruction(TestStablecoinBusinessLogic):
-    pass
 
-    # def test_verify_exchange_rate_success(self):
-    #     token_amount_cent      = 100
-    #     collatoral_amount_cent = 99
+    def test_destroy_flow(self):
+        data = self.si.DESTROY_initiate(100, "IBAN")
+        self.assertEqual(data['status'], Transaction.Status.PAYMENT_PENDING)
+        ans =  self.si.DESTROY_pay(data["payment_id"], None, 100, "KEY")
+        self.assertEqual(data['status'], Transaction.Status.PAYOUT_DONE)
 
-    #     verify = self.si.initiate_destruction( token_amount_cent, "IBAN")
+    def test_destroy_instant_flow(self):
+        data = self.si.DESTROY_pay(None, "IBAN", 100, "KEY")
+        self.assertEqual(data['status'], Transaction.Status.PAYOUT_DONE)
 
-    #     self.assertEqual(verify["collatoral_amount_cent"], collatoral_amount_cent)
+    def test_destroy_flow_wrong_amount(self):
+        data = self.si.DESTROY_initiate(101, "iban")
+        self.assertEqual(data['status'], Transaction.Status.PAYMENT_PENDING)
+        ans =  self.si.DESTROY_pay(data["payment_id"], None, 100, "KEY")
+        self.assertEqual(ans, None)
 
-    #def test_verify_exchange_rate_rounding(self):
-    #    collatoral_amount_cent = 101
-    #    token_amount_cent      = 99
+    def test_destroy_flow_wrong_state(self):
+        data = self.si.DESTROY_initiate(100, "IBAN")
+        self.assertEqual(data['status'], Transaction.Status.PAYMENT_PENDING)
+        ans =  self.si.DESTROY_pay(data["payment_id"], None, 100, "KEY")
+        self.assertEqual(data['status'], Transaction.Status.PAYOUT_DONE)
+        ans =  self.si.DESTROY_pay(data["payment_id"], None, 100, "KEY")
+        self.assertEqual(ans, None)
 
-    #    verify = self.si.CREATE_initiate( collatoral_amount_cent)
-
-    #    self.assertEqual(verify["token_amount_cent"], token_amount_cent)
-
-    #def test_wrong_exchange_rate_types(self):
-    #    collatoral_amount_cent = 100.1
-
-    #    with self.assertRaises(StablecoinInteractor.VerificationError):
-    #        self.si.CREATE_initiate( collatoral_amount_cent)
-
-    #def test_start_transaction(self):
-    #    #setup
-    #    collatoral_amount_cent = 100
-    #    payment_data = {
-    #            "link"   : "https://pay.moeneyyys.shrnarf/payment/<id>",
-    #            "collatoral_amount_cent" : collatoral_amount_cent,
-    #            "provider" : "bank",
-    #            "timeout" : 3000,
-    #            }
-
-    #    # excecute
-    #    rv = self.si.CREATE_initiate(collatoral_amount_cent=collatoral_amount_cent)
-
-    #    # asserts
-    #    self.persistence.create_transaction.assert_called
-    #    self.assertDictEqual(payment_data, extractDictAFromB(payment_data, rv))
-
-    #def test_paymentIdInTransaction(self):
-    #    #setup
-    #    collatoral_amount_cent = 100
-
-    #    # excecute
-    #    payment_data = self.si.CREATE_initiate(collatoral_amount_cent=collatoral_amount_cent)
-    #    # assert
-    #    self.assertIn("payment_id", payment_data)
-
-    ## def test_forDifferentTransactionWithSameData_IdIsDifferent(self):
-    #def test_forDifferentTransactionWithDifferentData_IdIsDifferent(self):
-
-    #    # excecute
-    #    payment_id1   = self.si.CREATE_initiate(100)["payment_id"]
-    #    payment_id2   = self.si.CREATE_initiate(200)["payment_id"]
-
-    #    # assert
-    #    self.assertNotEqual(payment_id1, payment_id2)
-
-    #def test_forDifferentTransactionWithSameData_IdIsDifferent(self):
-    #    collatoral_amount_cent = 100
-
-    #    # excecute
-    #    payment_id1   = self.si.CREATE_initiate(collatoral_amount_cent)["payment_id"]
-    #    payment_id2   = self.si.CREATE_initiate(collatoral_amount_cent)["payment_id"]
-
-    #    # assert
-    #    self.assertNotEqual(payment_id1, payment_id2)
-
-    #def test_finishTransaction_returnsSameTransaction(self):
-    #    #setup
-    #    collatoral_amount_cent = 100
-    #    payment_data = {
-    #            "link"   : "https://pay.moeneyyys.shrnarf/payment/<id>",
-    #            "collatoral_amount_cent" : collatoral_amount_cent,
-    #            "provider" : "bank",
-    #            "timeout" : 3000,
-    #            }
-    #    si = StablecoinInteractor(bank=TestBank(), persistence=TestPersistence(), blockchain=Mock() )
-
-    #    # excecute
-    #    transaction_data1 = si.CREATE_initiate(collatoral_amount_cent)
-    #    transaction_data2 = si.finish_creation_payment(transaction_data1["payment_id"])
-
-    #    # assert
-    #    self.assertEqual(transaction_data1, transaction_data2)
-    #    return transaction_data1["payment_id"]
-
-    #def test_finishTransactionRegistersOnBlockChain(self):
-    #    #setup
-    #    collatoral_amount_cent = 100
-    #    token_amount_cent      = 99
-    #    blockchain = Mock()
-    #    si = StablecoinInteractor(bank=TestBank(), persistence=TestPersistence(), blockchain=blockchain)
-
-    #    transaction_data1 = si.CREATE_initiate(collatoral_amount_cent)
-
-    #    # excecute
-    #    transaction_data2 = si.finish_creation_payment(transaction_data1["payment_id"])
-
-    #    blockchain.transfer.assert_called_with("ASDFASDF", token_amount_cent)
-
-    #def test_finishingTransactionWithoutPaymentFinished_Fails(self):
-    #    #setup
-    #    collatoral_amount_cent = 100
-    #    token_amount_cent      = 99
-    #    payment_data = {
-    #            "link"   : "https://pay.moeneyyys.shrnarf/payment/<id>",
-    #            "collatoral_amount_cent" : collatoral_amount_cent,
-    #            "provider" : "bank",
-    #            "timeout" : 3000,
-    #            }
-    #    bank = Mock()
-    #    bank.create_payment_request.return_value = payment_data
-    #    bank.check_payment_status.return_value = "pending"
-    #    blockchain = Mock()
-    #    si = StablecoinInteractor(bank=bank, persistence=TestPersistence(), blockchain=blockchain)
-
-    #    transaction_data1 = si.CREATE_initiate(collatoral_amount_cent)
-
-    #    # excecute
-    #    transaction_data2 = si.finish_creation_payment(transaction_data1["payment_id"])
-
-    #    self.assertFalse(blockchain.transfer.called)
+    def test_destroy_flow_wrong_payment_id(self):
+        ans =  self.si.DESTROY_pay("MISSING", None, 100, "KEY")
+        self.assertEqual(ans, None)

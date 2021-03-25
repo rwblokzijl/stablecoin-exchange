@@ -1,5 +1,7 @@
 from blockchain.blockchain import Blockchain
 
+from unittest.mock import Mock
+
 class TestBlockChain(Blockchain):
 
     def __str__(self):
@@ -22,8 +24,8 @@ class TestBlockChain(Blockchain):
     def get_identity(self):
         return "id"
 
-    def initiate_payment(self):
-        pass
+    def initiate_payment(self, connection_data, amount, payment_id):
+        return Mock()
 
     def list_transactions(self):
         return list()

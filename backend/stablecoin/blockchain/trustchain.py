@@ -54,9 +54,6 @@ class TrustChain(Blockchain):
         "Does nothing, simply returns connection info"
         return self.get_connection_info()
 
-    def payment_request_status(self, pid):
-        return False
-
     def on_payment(self, payment_id, iban, amount, user_pk):
         return self.stablecoin.DESTROY_pay(payment_id, iban, amount, str(hexlify(user_pk)))
 
@@ -78,16 +75,6 @@ class TrustChain(Blockchain):
         # transaction_id = self.get_new_id()
 
         return self.trustchain.send_money(amount, public_key, ip, port, payment_id)
-
-    "Bookkeeping functions"
-
-    #TODO
-    def list_transactions(self, account):
-        pass
-
-    #TODO
-    def get_available_balance(self):
-        pass
 
     "Blockchain Specific"
 
