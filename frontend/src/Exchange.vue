@@ -348,25 +348,6 @@ export default {
         this.set_payment(response.data)
       }).then(this.updateTransactions())
     },
-    confirmTransaction (paymentId, counterparty) {
-      axios.post('/api/exchange/complete', {
-        payment_id: paymentId,
-        counterparty: counterparty
-      }).then(response => console.log(response.data))
-      axios.get('/api/exchange/payment', {
-        params: {
-          payment_id: paymentId
-        }
-      }).then(this.updateTransactions())
-      // .then(this.updateBalance())
-    },
-    updateBalance () {
-      axios.get('/api/transactions/balance', {
-        params: {
-          wallet: this.account
-        }
-      }).then(response => { this.balanceCent = response.data.balance })
-    },
     updateTransactions () {
       for (let paymentId in this.payments) {
         axios.get('/api/exchange/status', {
