@@ -11,8 +11,6 @@ from blockchain.ipv8.trustchain.blocks.destruction import EuroTokenDestructionBl
 from blockchain.ipv8.trustchain.blocks.transfer    import EuroTokenTransferBlockListener
 from blockchain.ipv8.trustchain.blocks.rollback    import EuroTokenRollBackBlockListener
 
-from blockchain.ipv8.trustchain.db_helper import get_balance_for_block, get_block_balance_change
-
 from binascii import hexlify, unhexlify
 
 class MyTrustChainCommunity(TrustChainCommunity):
@@ -57,7 +55,7 @@ class MyTrustChainCommunity(TrustChainCommunity):
         key = b"LibNaCLPK:" + peer.public_key.key_to_bin()
         latest = self.persistence.get_latest_blocks(key, limit=1, block_types=BlockTypes.EUROTOKEN_TYPES)
         if len(latest)==1:
-            return get_balance_for_block(latest[0], self.persistence)
+            return latest[0].get_balance(self.persistence)
         else:
             return 0
 

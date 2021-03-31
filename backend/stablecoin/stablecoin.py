@@ -153,11 +153,6 @@ class StablecoinInteractor:
             # if payout_id:
             transaction.payout_done("ID NOT IMPLEMENTED")
 
-            def when_finished(fut):
-                self.logger.info("Delivery: ", fut.result())
-
-            payout_id.add_done_callback(when_finished)
-
             self.persistence.update_transaction(transaction)
 
         return transaction

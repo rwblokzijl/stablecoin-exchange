@@ -5,9 +5,9 @@ from ui.rest     import RootEndpoint
 import unittest
 from unittest.mock import MagicMock
 
-from test.util.TestPersistence import TestPersistence
-from test.util.TestBank        import TestBank
-from test.util.TestBlockchain  import TestBlockChain
+from test.util.MockPersistence import MockPersistence
+from test.util.MockBank        import MockBank
+from test.util.MockBlockchain  import MockBlockchain
 from persistence.inmemorypersistence      import InMemoryPersistence
 
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
@@ -31,11 +31,11 @@ class TestREST(AioHTTPTestCase):
             rateT2E     = 0.99
             ):
         if bank is None:
-            bank = TestBank()
+            bank = MockBank()
         if persistence is None:
             persistence = InMemoryPersistence()
         if blockchain is None:
-            blockchain = TestBlockChain()
+            blockchain = MockBlockchain()
         return StablecoinInteractor( name, bank, persistence, blockchain, rateE2T, rateT2E)
 
     async def request_status(self, payment_id):

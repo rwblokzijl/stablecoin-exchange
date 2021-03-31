@@ -1,9 +1,9 @@
 from bank.bank import Bank
 
-class TestBank(Bank):
+class MockBank(Bank):
 
     def __str__(self):
-        return "TestBank"
+        return "MockBank"
 
     def create_payment_request(self, amount, payment_id):
         return {

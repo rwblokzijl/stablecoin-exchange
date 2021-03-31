@@ -9,10 +9,10 @@ test:
 	pipenv run python -m unittest
 
 run:
-	pipenv run python run_coin.py
+	cd stablecoin && pipenv run python run_coin.py
 
 coveragea:
-	SLOW=1; cd stablecoin && pipenv run coverage run -m pytest --ignore pyipv8 && pipenv run coverage html -i && brave-browser htmlcov/index.html
+	SLOW=1; cd stablecoin && pipenv run coverage run -m pytest --ignore pyipv8 && pipenv run coverage html -i && (brave-browser htmlcov/index.html & disown)
 
 coverage:
-	cd stablecoin && pipenv run coverage run -m pytest --ignore pyipv8 && pipenv run coverage html -i && brave-browser htmlcov/index.html
+	cd stablecoin && pipenv run coverage run -m pytest --ignore pyipv8 && pipenv run coverage html -i && (brave-browser htmlcov/index.html & disown)

@@ -2,10 +2,10 @@ from blockchain.blockchain import Blockchain
 
 from unittest.mock import Mock
 
-class TestBlockChain(Blockchain):
+class MockBlockchain(Blockchain):
 
     def __str__(self):
-        return "TestBlockChain"
+        return "MockBlockChain"
 
     def create_payment_request(self, amount):
         return {

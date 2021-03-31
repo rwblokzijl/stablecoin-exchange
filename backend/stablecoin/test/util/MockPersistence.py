@@ -1,11 +1,11 @@
 from persistence.persistence import Persistence
 
-class TestPersistence(Persistence):
+class MockPersistence(Persistence):
     payment_data = {
             }
 
     def __str__(self):
-        return "TestPersistence"
+        return "MockPersistence"
 
     def create_transaction(self, payment_data):
         self.payment_data[payment_data["payment_id"]] = payment_data

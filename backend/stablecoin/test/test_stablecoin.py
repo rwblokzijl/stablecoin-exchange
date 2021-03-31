@@ -8,9 +8,9 @@ from persistence.inmemorypersistence      import InMemoryPersistence
 from test.util.captured_output import captured_output
 from test.util.dict_ops        import extractDictAFromB
 
-from test.util.TestPersistence import TestPersistence
-from test.util.TestBank        import TestBank
-from test.util.TestBlockchain  import TestBlockChain
+from test.util.MockPersistence import MockPersistence
+from test.util.MockBank        import MockBank
+from test.util.MockBlockchain  import MockBlockchain
 
 class TestStablecoinBusinessLogic(unittest.TestCase):
 
@@ -25,17 +25,17 @@ class TestStablecoinBusinessLogic(unittest.TestCase):
             rateT2E     = 1.00
             ):
         if bank is None:
-            bank = TestBank()
+            bank = MockBank()
         if persistence is None:
             persistence = InMemoryPersistence()
         if blockchain is None:
-            blockchain = TestBlockChain()
+            blockchain = MockBlockchain()
         return StablecoinInteractor( name, bank, persistence, blockchain, rateE2T, rateT2E)
 
     def setUp(self):
-        self.bank        = TestBank()
+        self.bank        = MockBank()
         self.persistence = Mock()
-        self.blockchain  = TestBlockChain()
+        self.blockchain  = MockBlockchain()
         self.si = self.getInteractor()
 
 class TestStablecoinBusinessLogicCreation(TestStablecoinBusinessLogic):

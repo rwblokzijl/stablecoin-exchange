@@ -6,7 +6,7 @@ from transaction import Transaction
 
 import unittest
 from unittest.mock import Mock
-from test.util.TestBank import TestBank
+from test.util.MockBank import MockBank
 
 #class TestMain(AioHTTPTestCase):
 
@@ -18,7 +18,7 @@ from test.util.TestBank import TestBank
 #        return REST(self.si).app
 
 #    def setUp(self):
-#        self.bank        = TestBank()
+#        self.bank        = MockBank()
 #        self.blockchain  = Mock()
 #        self.persistence = Mock()
 #        self.si = StablecoinInteractor(

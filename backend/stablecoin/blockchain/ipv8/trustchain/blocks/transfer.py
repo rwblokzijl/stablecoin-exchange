@@ -2,20 +2,15 @@ from blockchain.ipv8.trustchain.blocks.base import EuroTokenBlock, EuroTokenBloc
 from pyipv8.ipv8.attestation.trustchain.block     import ValidationResult
 
 class EuroTokenTransferBlock(EuroTokenBlock):
-    def __init__(self, *args, **kwargs):
-        super(EuroTokenTransferBlock, self).__init__(*args, **kwargs)
-        # self.amount = self.transaction["amount"]
 
-    def validate_transaction(self, database):
-        result, errors =  super(EuroTokenTransferBlock, self).validate_transaction(database)
-
+    def validate_eurotoken_transaction(self, database):
         if "amount" not in self.transaction:
-            return ValidationResult.invalid, errors + ['amount missing from transaction']
+            raise self.MissingAmount('amount missing from transaction')
 
-        if result != ValidationResult.valid:
-            return result, errors
+        return super(EuroTokenTransferBlock, self).validate_eurotoken_transaction(database)
 
-        return ValidationResult.valid, []
+    class MissingAmount(EuroTokenBlock.Invalid):
+        pass
 
 class EuroTokenTransferBlockListener(EuroTokenBlockListener):
     BLOCK_CLASS = EuroTokenTransferBlock

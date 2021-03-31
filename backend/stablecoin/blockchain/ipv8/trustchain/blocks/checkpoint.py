@@ -3,16 +3,11 @@ from pyipv8.ipv8.peer                         import Peer
 
 from blockchain.ipv8.trustchain.blocks.base        import EuroTokenBlock, EuroTokenBlockListener
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
-from blockchain.ipv8.trustchain.db_helper          import get_verified_balance_for_block, isAgreement
 
 import logging
 
 class EuroTokenCheckpointBlock(EuroTokenBlock):
     "For now validation is the same as EuroTokenBlock"
-
-    def __init__(self, *args, **kwargs):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        return super(EuroTokenCheckpointBlock, self).__init__(*args, **kwargs)
 
     async def crawl_blocks_before(self, block, peer):
         return await self.community.send_crawl_request(peer, block.public_key,
@@ -20,7 +15,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
                 max(GENESIS_SEQ, block.sequence_number - 1))
 
     def get_block_before_or_crawl(self, block, persistence, peer):
-        self.logger.warning(f"crawling for block before")
+        self._logger.debug(f"crawling for block before")
         blockBefore = persistence.get_block_with_hash(block.previous_hash)
         if not blockBefore:
             self.crawl_blocks_before(block, peer) or None #attempt crawl
@@ -30,99 +25,105 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
     def ensure_money_sender_blocks(self, block, persistence, peer):
         if block == None: #end of chain or missing block because of connection issues
             return
-        self.logger.warning(f"ensure peer {block.sequence_number} ")
+        self._logger.debug(f"ensure peer {block.sequence_number} ")
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
-            if linked is not None and self.is_valid_gateway(linked.public_key):
-                self.logger.warning("Found full checkpoint")
+            if linked is not None and self.is_valid_gateway():
+                self._logger.debug("Found full checkpoint")
                 return True #done
             else:
-                self.logger.warning("Found half checkpoint")
+                self._logger.debug("Found half checkpoint")
                 blockBefore = self.get_block_before_or_crawl(block, persistence, peer)
                 return self.ensure_money_sender_blocks(blockBefore, persistence, peer) # recurse
         else:
-            self.logger.warning("Found normal block")
+            self._logger.debug("Found normal block")
             blockBefore = self.get_block_before_or_crawl(block, persistence, peer)
             return self.ensure_money_sender_blocks(blockBefore, persistence, peer) # recurse
 
     def ensure_receive_money_linked_blocks_available(self, block, persistence, peer):
         if block is None:
-            self.logger.warning(f"Found genesis")
+            self._logger.debug(f"Found genesis")
             return ValidationResult.valid, [] #genesis
-        self.logger.warning(f"ensure {block.sequence_number-1}")
-        blockBefore = persistence.get_block_with_hash(block.previous_hash) # must be available
-        if not blockBefore and block.sequence_number != GENESIS_SEQ:
-            self.logger.warning(f"not available, will crawl: {block.sequence_number-1}")
-            return ValidationResult.partial_previous, []
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
-            if linked is not None and self.is_valid_gateway(linked.public_key):
-                self.logger.warning("Found full checkpoint") #dont need more info
+            if linked is not None:
+                if not linked.is_valid_gateway():
+                    raise self.UnsanctionedGateway("unsanctioned gateway")
+                self._logger.debug("Found full checkpoint") #dont need more info
                 return ValidationResult.valid, []
             else:
-                self.logger.warning("Found half checkpoint")
-                return self.ensure_receive_money_linked_blocks_available(blockBefore, persistence, peer) # recurse
-        elif block.type == BlockTypes.TRANSFER and isAgreement(block):
+                self._logger.debug("Found half checkpoint")
+
+        blockBefore = block.get_block_before_or_raise(persistence) # must be available
+
+        if block.type == BlockTypes.TRANSFER and block.isAgreement():
+            self._logger.debug("Found transaction")
             linked = persistence.get_linked(block)
-            self.logger.warning("Found transaction")
             self.ensure_money_sender_blocks(linked, persistence, peer)
             return self.ensure_receive_money_linked_blocks_available(blockBefore, persistence, peer) # recurse
         else:
             return self.ensure_receive_money_linked_blocks_available(blockBefore, persistence, peer) # recurse
 
-    def validate_receive_money_linked_blocks_available(self, block, persistence, rollbacks=[]):
+    def sender_invalid(self, block, rollbacks):
+        if block.hash in rollbacks:
+            return
+        else:
+            #TODO: Neatly ask user to Roll back the block
+            raise self.InvalidSend(str(block))
+
+    def validate_receive_money_linked_blocks(self, block, persistence, rollbacks=None):
+        if rollbacks is None:
+            rollbacks = {}
         if block == None: # only when at start of chain
             return ValidationResult.valid, []
-        self.logger.warning(f"validate {block.sequence_number}")
+        self._logger.debug(f"validate {block.sequence_number}")
         blockBefore = persistence.get_block_with_hash(block.previous_hash) # always available
         if block.type == BlockTypes.CHECKPOINT:
             linked = persistence.get_linked(block)
-            if linked is not None and self.is_valid_gateway(linked.public_key):
-                self.logger.warning("Found full checkpoint")
+            if linked is not None and linked.is_valid_gateway():
+                self._logger.debug("Found full checkpoint")
                 return ValidationResult.valid, []
             else:
-                self.logger.warning("Found half checkpoint")
-                return self.validate_receive_money_linked_blocks_available(blockBefore, persistence) # recurse
-        elif block.type == BlockTypes.TRANSFER and isAgreement(block):
+                self._logger.debug("Found half checkpoint")
+                return self.validate_receive_money_linked_blocks(blockBefore, persistence, rollbacks) # recurse
+        elif block.type == BlockTypes.ROLLBACK and block.isProposal():
+            rollbacks[block.transaction["transaction_hash"]] = block
+        elif block.type == BlockTypes.TRANSFER and block.isAgreement():
             linked = persistence.get_linked(block)
-            senderBalance = get_verified_balance_for_block(block, persistence)
+            senderBalance = linked.get_verified_balance(persistence)
             if senderBalance is None:
                 if persistence.did_double_spend(block.public_key):
-                    #TODO: Neatly ask user to Roll back the block
-                    return ValidationResult.invalid, ["Double spend", block]
-                return ValidationResult.invalid, [f"Sender for seq: {block.sequence_number} has missing blocks"]
+                    sender_invalid(block, rollbacks)
+                else:
+                    raise MissingBlocks(f"Sender blocks missing while verifying {block}")
             if senderBalance < 0:
-                return ValidationResult.invalid, [f"Sender for seq: {block.sequence_number} has insufficient balance"]
-            return self.validate_receive_money_linked_blocks_available(blockBefore, persistence) # recurse
+                sender_invalid(block)
+            return self.validate_receive_money_linked_blocks(blockBefore, persistence, rollbacks) # recurse
         else:
-            return self.validate_receive_money_linked_blocks_available(blockBefore, persistence) # recurse
+            return self.validate_receive_money_linked_blocks(blockBefore, persistence, rollbacks) # recurse
 
-    def validate_transaction(self, persistence):
-        print("VALIDATE CHECKPOINT")
-        result, errors =  super(EuroTokenCheckpointBlock, self).validate_transaction(persistence)
+    def validate_eurotoken_transaction(self, persistence):
+        super(EuroTokenCheckpointBlock, self).validate_eurotoken_transaction(persistence)
 
-        if result != ValidationResult.valid: #make sure main chain is present
-            return result, errors
-
-        if self.is_valid_gateway(self.link_public_key) and not persistence.get_linked(self): #for me, and not signed
+        if (self.isProposal() and
+                self.link_public_key == persistence.my_pk and # for me
+                not persistence.get_linked(self)): #not signed
             peer = Peer(self.public_key)
             result, errors = self.ensure_receive_money_linked_blocks_available(self, persistence, peer)
 
-            if result != ValidationResult.valid or ValidationResult.partial_next: #make sure to crawl for partial_previous
+            if result != ValidationResult.valid: #make sure to crawl for partial_previous
+                return result, errors
+
+            result, errors = self.validate_receive_money_linked_blocks(self, persistence)
+
+            if result != ValidationResult.valid: #make sure to crawl for partial_previous
                 return result, errors
 
         return ValidationResult.valid, []
-
 
 class EuroTokenCheckpointBlockListener(EuroTokenBlockListener):
     BLOCK_CLASS = EuroTokenCheckpointBlock
 
     def __init__(self, *args, **kwargs):
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
         return super(EuroTokenCheckpointBlockListener, self).__init__(*args, **kwargs)
-
-    # def received_block(self, block):
-    #     pass
-
-    def should_sign(self, block):
-        return True
