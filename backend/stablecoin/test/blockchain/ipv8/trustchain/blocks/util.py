@@ -61,7 +61,7 @@ def TestBlock(*args, **kwargs):
     elif btype == BlockTypes.ROLLBACK:
         return TestEuroTokenRollBackBlock(*args, **kwargs)
     else:
-        return None
+        return TrustChainTestBlock(*args, **kwargs)
 
 class MockDatabase(TrustChainMockDatabase):
     def __init__(self, *args, **kwargs):
@@ -70,7 +70,10 @@ class MockDatabase(TrustChainMockDatabase):
         self.hash_map = {}
         return super(MockDatabase, self).__init__(*args, **kwargs)
 
-    def add_block(self, block):
+    def add_block(self, block, force=False):
+        validation = block.validate_transaction(self)
+        if validation[0] == ValidationResult.invalid and not force:
+            block.validate_eurotoken_transaction(self)
         self.hash_map[block.hash] = block
         return super(MockDatabase, self).add_block(block)
 

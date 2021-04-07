@@ -5,6 +5,8 @@ from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GE
 from blockchain.ipv8.trustchain.blocks.rollback  import EuroTokenRollBackBlock
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
+from binascii import hexlify
+
 import unittest
 
 class TestEuroTokenRollBack(unittest.TestCase):
@@ -38,7 +40,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
         # roll back the transaction
         A2 = TestBlock(
                 block_type=BlockTypes.ROLLBACK,
-                transaction={'balance': 0, 'amount': 10, 'transaction_hash': A1.hash},
+                transaction={'balance': 0, 'amount': 10, 'transaction_hash': hexlify(A1.hash)},
                 previous = A1)
 
         result, errors = A2.validate_transaction(db)
@@ -71,7 +73,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
         # roll back the transaction
         A2 = TestBlock(
                 block_type=BlockTypes.ROLLBACK,
-                transaction={'balance': 0, 'transaction_hash': A1.hash},
+                transaction={'balance': 0, 'transaction_hash': hexlify(A1.hash)},
                 previous = A1)
 
         result, errors = A2.validate_transaction(db)
@@ -111,39 +113,6 @@ class TestEuroTokenRollBack(unittest.TestCase):
         self.assertEqual(result, ValidationResult.invalid)
         self.assertIsInstance(errors[0], EuroTokenRollBackBlock.MissingTransactionHash)
 
-    def test_wrong_hash(self):
-        """
-        Test hash that doesnt point to a real block
-        """
-        db = MockDatabase()
-
-        # Receive money
-        B1 = TestBlock(
-                block_type=BlockTypes.TRANSFER,
-                transaction={'balance': 0, 'amount': 10},
-                )
-        A1 = TestBlock(
-                block_type=BlockTypes.TRANSFER,
-                transaction={'balance': 0, 'amount': 10},
-                linked=B1
-                )
-        # db.add_block(G1) #TODO: G1 should really exist or be crawled for (isnt right now)
-        db.add_block(A1)
-
-        result, errors = A1.validate_transaction(db)
-        self.assertEqual(errors, [])
-        self.assertEqual(result, ValidationResult.valid)
-
-        # roll back the transaction
-        A2 = TestBlock(
-                block_type=BlockTypes.ROLLBACK,
-                transaction={'balance': 0, 'amount': 10, 'transaction_hash': "WRONGHASHHH"},
-                previous = A1)
-
-        result, errors = A2.validate_transaction(db)
-        self.assertEqual(result, ValidationResult.invalid)
-        self.assertIsInstance(errors[0], EuroTokenRollBackBlock.MissingTransaction)
-
     def test_missing_previous(self):
         """
         Test Valid rollback after receiving
@@ -170,7 +139,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
         # roll back the transaction
         A2 = TestBlock(
                 block_type=BlockTypes.ROLLBACK,
-                transaction={'balance': 0, 'amount': 10, 'transaction_hash': A1.hash},
+                transaction={'balance': 0, 'amount': 10, 'transaction_hash': hexlify(A1.hash)},
                 previous = A1)
 
         result, errors = A2.validate_transaction(db)
@@ -202,7 +171,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
         # roll back the transaction
         A2 = TestBlock(
                 block_type=BlockTypes.ROLLBACK,
-                transaction={'balance': 5, 'amount': 5, 'transaction_hash': A1.hash},
+                transaction={'balance': 5, 'amount': 5, 'transaction_hash': hexlify(A1.hash)},
                 previous = A1)
 
         result, errors = A2.validate_transaction(db)

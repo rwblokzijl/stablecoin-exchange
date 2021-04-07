@@ -8,7 +8,7 @@ class EuroTokenDestructionBlock(EuroTokenBlock):
 
         if "payment_id" not in self.transaction and "iban" not in self.transaction:
             result = ValidationResult.invalid
-            raise self.MissingPaymentIDorIBAN( 'payment_id missing from transaction')
+            raise self.MissingPaymentIDorIBAN( 'payment_id and iban missing from transaction')
 
         return super(EuroTokenDestructionBlock, self).validate_eurotoken_transaction(database)
 

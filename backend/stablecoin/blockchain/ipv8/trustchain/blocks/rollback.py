@@ -1,5 +1,7 @@
-from blockchain.ipv8.trustchain.blocks.base import EuroTokenBlock, EuroTokenBlockListener
-from pyipv8.ipv8.attestation.trustchain.block     import ValidationResult
+from blockchain.ipv8.trustchain.blocks.base   import EuroTokenBlock, EuroTokenBlockListener
+from pyipv8.ipv8.attestation.trustchain.block import ValidationResult
+
+from binascii import unhexlify
 
 class EuroTokenRollBackBlock(EuroTokenBlock):
 
@@ -15,18 +17,12 @@ class EuroTokenRollBackBlock(EuroTokenBlock):
 
         super(EuroTokenRollBackBlock, self).validate_eurotoken_transaction(database)
 
-
-        rolled_back = database.get_block_with_hash(self.transaction["transaction_hash"])
-        if rolled_back is None: #the balance verification makes sure the chain is full
-            raise self.MissingTransaction("associated transaction not found")
-
-        if rolled_back.transaction["amount"] != self.transaction["amount"]:
-            raise self.InvalidTransaction("associated transaction amount does not match")
+        rolled_back = database.get_block_with_hash(unhexlify(self.transaction["transaction_hash"]))
+        if rolled_back is not None: #if we can reject an incorrect block now, thats better than later
+            if rolled_back.transaction["amount"] != self.transaction["amount"]:
+                raise self.InvalidTransaction("associated transaction amount does not match")
 
     class MissingTransactionHash(EuroTokenBlock.Invalid):
-        pass
-
-    class MissingTransaction(EuroTokenBlock.Invalid):
         pass
 
     class InvalidTransaction(EuroTokenBlock.Invalid):

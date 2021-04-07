@@ -49,7 +49,7 @@ async def start_communities():
         }]
     configuration['address'] = ip_address
     configuration['logger'] = {
-            'level': "WARNING",
+            'level': "INFO",
             }
     configuration['overlays'] = [{
         'class': 'MyTrustChainCommunity',

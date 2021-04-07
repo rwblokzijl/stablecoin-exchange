@@ -1,13 +1,14 @@
-from pyipv8.ipv8.attestation.trustchain.block     import GENESIS_HASH, UNKNOWN_SEQ, GENESIS_SEQ
-from pyipv8.ipv8.attestation.trustchain.block     import TrustChainBlock, ValidationResult
-from pyipv8.ipv8.attestation.trustchain.listener  import BlockListener
+from pyipv8.ipv8.attestation.trustchain.block    import GENESIS_HASH, UNKNOWN_SEQ, GENESIS_SEQ
+from pyipv8.ipv8.attestation.trustchain.block    import TrustChainBlock, ValidationResult
+from pyipv8.ipv8.attestation.trustchain.listener import BlockListener
 
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
 from binascii import hexlify, unhexlify
-from enum import Enum
+from enum     import Enum
 
 import logging
+import traceback
 
 class EuroTokenBlock(TrustChainBlock):
 
@@ -29,15 +30,11 @@ class EuroTokenBlock(TrustChainBlock):
             if linked is not None and linked.is_valid_gateway(): #Found full checkpoint
                 return self.transaction["balance"]
             else: #Found half checkpoint ignore and recurse
-                blockBefore = self.get_block_before_or_raise(persistence)
+                blockBefore = self.get_previous_block_or_raise(persistence)
                 return blockBefore.get_verified_balance(persistence) # recurse
-
-        blockBefore = self.get_block_before_or_raise(persistence)
-        if self.type in BlockTypes.EUROTOKEN_TYPES:
-            # Remove money spent this block from verified balance of block before
+        else:
+            blockBefore = self.get_previous_block_or_raise(persistence)
             return blockBefore.get_verified_balance(persistence) + self.get_valid_balance_change()
-        else: #Not eurotoken
-            return blockBefore.get_verified_balance(persistence)
 
     def get_valid_balance_change(self):
         if  self.isProposal():# block is sending money
@@ -51,58 +48,43 @@ class EuroTokenBlock(TrustChainBlock):
         else: # block is receiving money
             return self.transaction.get("amount", 0)
 
-    def get_block_before(self, persistence):
-        return persistence.get_block_with_hash(self.previous_hash)
+    def get_block_before(self, block, persistence):
+        return persistence.get_block_with_hash(block.previous_hash)
 
-    def get_block_before_or_raise(self, persistence):
+    def get_previous_block_or_raise(self, persistence):
+        return self.get_block_before_or_raise(self, persistence)
+
+    def get_block_before_or_raise(self, block, persistence):
         if self.sequence_number == GENESIS_SEQ: #first block in chain
             # Dont raise, just return None
             return None
-        blockBefore = self.get_block_before(persistence)
+        blockBefore = self.get_block_before(block, persistence)
         if not blockBefore:
-            raise self.PartialPrevious(f"Missing block {hexlify(self.public_key)}:{self.sequence_number-1}")
+            raise self.PartialPrevious(f"Missing block {hexlify(block.public_key)}:{block.sequence_number-1}")
+        if blockBefore.type not in BlockTypes.EUROTOKEN_TYPES: #Go back one more block
+            return self.get_block_before_or_raise(blockBefore, persistence)
         return blockBefore
 
     def get_balance(self, persistence):
         "Gets balance from all previous blocks"
-        if self.sequence_number == GENESIS_SEQ: #first block in chain
-            return self.get_balance_change()
-
-        if  self.type in [ BlockTypes.TRANSFER, BlockTypes.DESTRUCTION, BlockTypes.CHECKPOINT ] and self.isProposal():
-            # block contains balance (base case)
+        if self.isProposal(): # block contains balance (base case)
             return self.transaction["balance"]
 
-        blockBefore = self.get_block_before_or_raise(persistence)
-        if self.type not in BlockTypes.EUROTOKEN_TYPES:
-            return blockBefore.get_balance(persistence)
-        if self.type in [BlockTypes.TRANSFER, BlockTypes.CREATION] and self.isAgreement():
-            # block is receiving money add it and recurse
-            return blockBefore.get_balance(persistence) + self.get_balance_change()
-        else:
-            #bad type that shouldn't exist, for now just ignore and return for next
-            return blockBefore.get_balance(persistence)
+        if self.sequence_number == GENESIS_SEQ: #first block in chain
+            return self.get_balance_change() #use amount received instead
+
+        # get balance of last block and add balance change
+        blockBefore = self.get_previous_block_or_raise(persistence)
+        return blockBefore.get_balance(persistence) + self.get_balance_change()
 
     def is_valid_gateway(self):
         return True # For now all gateways are trusted, later this is a very important check
 
     def validate_eurotoken_transaction(self, persistence):
-        return self.validate_balance(persistence)
-
-    def validate_transaction(self, persistence):
-        try:
-            self.validate_eurotoken_transaction(persistence)
-            return ValidationResult.valid, []
-        except self.PartialPrevious as e:
-            return ValidationResult.partial_previous, [e]
-
-        except self.Invalid as e:
-            return ValidationResult.invalid, [e]
-
-    def validate_balance(self, persistence):
         if "balance" not in self.transaction:
             raise self.MissingBalance('balance missing from transaction')
         if self.isProposal():
-            blockBefore  = self.get_block_before_or_raise(persistence)
+            blockBefore  = self.get_previous_block_or_raise(persistence)
             if blockBefore is None: # genesis
                 balanceBefore = 0
             else:
@@ -118,10 +100,26 @@ class EuroTokenBlock(TrustChainBlock):
 
         return ValidationResult.valid, []
 
+    def validate_transaction(self, persistence):
+        try:
+            self.validate_eurotoken_transaction(persistence)
+            return ValidationResult.valid, []
+        except self.ValidNoSign as e:
+            # This happens if the block should be persisted, but NOT signed
+            return ValidationResult.valid, [e]
+        except self.PartialPrevious as e:
+            print("PP, should crawl", self.sequence_number)
+            return ValidationResult.partial_previous, [e]
+        except self.Invalid as e:
+            return ValidationResult.invalid, [e]
+
     class ValidationResult(Exception):
         pass
 
     class PartialPrevious(ValidationResult):
+        pass
+
+    class ValidNoSign(ValidationResult):
         pass
 
     class Invalid(ValidationResult):
@@ -138,6 +136,17 @@ class EuroTokenBlock(TrustChainBlock):
 
     class MissingBalance(Invalid):
         pass
+
+    def should_sign(self, persistence):
+        return True
+        # try:
+        #     self.validate_eurotoken_transaction(persistence)
+        #     return True
+        # except Exception as e:
+        #     print(e)
+        #     traceback.print_exc()
+        #     # This happens if the block should be persisted, but NOT signed
+        #     return False
 
     def __str__(self):
         # This makes debugging and logging easier
@@ -165,5 +174,5 @@ class EuroTokenBlockListener(BlockListener):
         self.logger.info(f"Got block {block}")
 
     def should_sign(self, block):
-        return True
+        return block.should_sign(self.community.persistence)
 
