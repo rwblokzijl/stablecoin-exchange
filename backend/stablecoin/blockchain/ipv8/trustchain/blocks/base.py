@@ -1,7 +1,6 @@
 from pyipv8.ipv8.attestation.trustchain.block    import GENESIS_HASH, UNKNOWN_SEQ, GENESIS_SEQ
 from pyipv8.ipv8.attestation.trustchain.block    import TrustChainBlock, ValidationResult
 from pyipv8.ipv8.attestation.trustchain.listener import BlockListener
-
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
 from binascii import hexlify, unhexlify
@@ -9,6 +8,8 @@ from enum     import Enum
 
 import logging
 import traceback
+
+from dataclasses import dataclass
 
 class EuroTokenBlock(TrustChainBlock):
 
@@ -20,6 +21,14 @@ class EuroTokenBlock(TrustChainBlock):
 
     def isAgreement(self):
         return not self.isProposal()
+
+    def get_linked_or_crawl(self, persistence):
+        linked = persistence.get_linked(self)
+        if not linked:
+            raise self.MissingBlocks([ # Crawl for self to get linked
+                self.BlockRange( self.public_key, self.sequence_number, self.sequence_number
+                    )])
+        return linked
 
     def get_verified_balance(self, persistence):
         if self.sequence_number == GENESIS_SEQ: # base
@@ -55,12 +64,14 @@ class EuroTokenBlock(TrustChainBlock):
         return self.get_block_before_or_raise(self, persistence)
 
     def get_block_before_or_raise(self, block, persistence):
-        if self.sequence_number == GENESIS_SEQ: #first block in chain
+        if block.sequence_number == GENESIS_SEQ: #first block in chain
             # Dont raise, just return None
             return None
         blockBefore = self.get_block_before(block, persistence)
         if not blockBefore:
-            raise self.PartialPrevious(f"Missing block {hexlify(block.public_key)}:{block.sequence_number-1}")
+            raise self.MissingBlocks([
+                self.BlockRange(block.public_key, block.sequence_number-1, block.sequence_number-1
+                    )])
         if blockBefore.type not in BlockTypes.EUROTOKEN_TYPES: #Go back one more block
             return self.get_block_before_or_raise(blockBefore, persistence)
         return blockBefore
@@ -80,49 +91,100 @@ class EuroTokenBlock(TrustChainBlock):
     def is_valid_gateway(self):
         return True # For now all gateways are trusted, later this is a very important check
 
-    def validate_eurotoken_transaction(self, persistence):
+    def assert_transaction_balance(self):
         if "balance" not in self.transaction:
             raise self.MissingBalance('balance missing from transaction')
-        if self.isProposal():
-            blockBefore  = self.get_previous_block_or_raise(persistence)
-            if blockBefore is None: # genesis
-                balanceBefore = 0
+
+    def get_unlinked_checkpoint_ranges(self, block, persistence):
+        blockBefore = self.get_block_before_or_raise(block, persistence)
+        if not blockBefore: #genesis
+            return []
+        if blockBefore.type == BlockTypes.CHECKPOINT:
+            if persistence.get_linked(blockBefore) is not None:
+                # Found last valid checkpoint
+                return []
             else:
-                balanceBefore = blockBefore.get_balance(persistence)
-            balanceChange = self.get_balance_change()
-            verifiedBalance = self.get_verified_balance(persistence)
-            if self.transaction["balance"] < 0:
-                raise self.InsufficientBalance(f'block balance ({self.sequence_number}): {self.transaction["balance"]} is negative')
-            if self.transaction["balance"] != balanceBefore + balanceChange:
-                raise self.InvalidBalance(f'block balance ({self.sequence_number}): {self.transaction["balance"]} does not match calculated balance: {balanceBefore} + {balanceChange} ')
-            if verifiedBalance < 0:
-                raise self.InsufficientValidatedBalance(f'block verifiedBalance balance ({self.sequence_number}): {verifiedBalance} is not sufficient')
+                #Found un-linked checkpoint, we should crawl it to ensure linked blocks, add to range and recurse
+                return self.get_unlinked_checkpoint_ranges(blockBefore, persistence) + [self.BlockRange(
+                    blockBefore.publicKey, blockBefore.sequence_number, blockBefore.sequence_number)]
+        else:
+            return self.get_unlinked_checkpoint_ranges(blockBefore, persistence)
+
+    def verify_balance_available_for_block(self, block, persistence):
+        verifiedBalance = block.get_verified_balance(persistence)
+        if verifiedBalance < 0:
+            # the validated balance is not enough, but it could be the case we're missing some
+            # checkpoint links
+            unconfirmed = self.get_unlinked_checkpoint_ranges(block, persistence)
+            if unconfirmed: #There are some checkpoints without linked blocks
+                # crawl these missing linked blocks
+                raise self.MissingBlocks(unconfirmed)
+            else: #last checkpoint is full, spendable balance is invalid
+                raise self.InsufficientValidatedBalance(f'block verifiedBalance balance ({block.sequence_number}): {verifiedBalance} is not sufficient')
+        return # Valid
+
+    def validate_eurotoken_transaction_proposal(self, persistence):
+        self.assert_transaction_balance()
+        blockBefore  = self.get_previous_block_or_raise(persistence)
+        if blockBefore is None: # genesis
+            balanceBefore = 0
+        else:
+            balanceBefore = blockBefore.get_balance(persistence)
+        balanceChange = self.get_balance_change()
+        if self.transaction["balance"] < 0:
+            raise self.InsufficientBalance(f'block balance ({self.sequence_number}): {self.transaction["balance"]} is negative')
+        if self.transaction["balance"] != balanceBefore + balanceChange:
+            raise self.InvalidBalance(f'block balance ({self.sequence_number}): {self.transaction["balance"]} does not match calculated balance: {balanceBefore} + {balanceChange} ')
+        self.validate
+
+        self.verify_balance_available_for_block(self, persistence)
 
         return ValidationResult.valid, []
+
+    def validate_eurotoken_transaction_agreement(self, persistence):
+        pass
+
+    def validate_eurotoken_transaction(self, persistence):
+        if self.isProposal():
+            return self.validate_eurotoken_transaction_proposal(persistence)
+        else:
+            return self.validate_eurotoken_transaction_agreement(persistence)
 
     def validate_transaction(self, persistence):
         try:
             self.validate_eurotoken_transaction(persistence)
             return ValidationResult.valid, []
-        except self.ValidNoSign as e:
-            # This happens if the block should be persisted, but NOT signed
-            return ValidationResult.valid, [e]
-        except self.PartialPrevious as e:
-            print("PP, should crawl", self.sequence_number)
-            return ValidationResult.partial_previous, [e]
+        # except self.PartialPrevious as e:
+        #     return ValidationResult.partial_previous, [e]
         except self.Invalid as e:
             return ValidationResult.invalid, [e]
+        except self.MissingBlocks as e:
+            return ValidationResult.missing, e.block_range
 
-    class ValidationResult(Exception):
+    @dataclass
+    class BlockRange:
+        public_key: bytes
+        first: int
+        last: int
+
+        def __repr__(self):
+            return f"{hexlify(self.public_key)}:{self.first}-{self.last}"
+
+        def __str__(self):
+            return self.__repr__()
+
+    class ValidationResultException(Exception):
         pass
 
-    class PartialPrevious(ValidationResult):
+    class PartialPrevious(ValidationResultException):
         pass
 
-    class ValidNoSign(ValidationResult):
-        pass
+    class MissingBlocks(ValidationResultException):
+        def __init__(self, block_range, last_chance=False):
+            self.block_range = block_range
+            return super().__init__("Missing blocks: " + ", ".join([str(b) for b in block_range]))
 
-    class Invalid(ValidationResult):
+    class Invalid(ValidationResultException):
         pass
 
     class InvalidBalance(Invalid):
@@ -137,16 +199,24 @@ class EuroTokenBlock(TrustChainBlock):
     class MissingBalance(Invalid):
         pass
 
+    class MissingProposal(Invalid):
+        pass
+
+    class ProposalMismatch(Invalid):
+        pass
+
+    class InvalidRollback(Invalid):
+        pass
+
     def should_sign(self, persistence):
-        return True
-        # try:
-        #     self.validate_eurotoken_transaction(persistence)
-        #     return True
-        # except Exception as e:
-        #     print(e)
-        #     traceback.print_exc()
-        #     # This happens if the block should be persisted, but NOT signed
-        #     return False
+        try:
+            self.validate_eurotoken_transaction(persistence)
+            return True
+        except Exception as e:
+            # print(e)
+            # traceback.print_exc()
+            # This happens if the block should be persisted, but NOT signed
+            return False
 
     def __str__(self):
         # This makes debugging and logging easier

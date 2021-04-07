@@ -2,7 +2,7 @@ from blockchain.ipv8.trustchain.blocks.base   import EuroTokenBlock, EuroTokenBl
 from pyipv8.ipv8.attestation.trustchain.block import ValidationResult
 
 class EuroTokenCreationBlock(EuroTokenBlock):
-    def validate_eurotoken_transaction(self, database):
+    def validate_eurotoken_transaction_proposal(self, database):
         if "amount" not in self.transaction:
             raise self.MissingAmount('amount missing from transaction')
 

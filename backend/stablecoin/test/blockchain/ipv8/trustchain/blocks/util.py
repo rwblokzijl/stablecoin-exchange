@@ -73,7 +73,7 @@ class MockDatabase(TrustChainMockDatabase):
     def add_block(self, block, force=False):
         validation = block.validate_transaction(self)
         if validation[0] == ValidationResult.invalid and not force:
-            block.validate_eurotoken_transaction(self)
+            block.validate_eurotoken_transaction(self) # will raise
         self.hash_map[block.hash] = block
         return super(MockDatabase, self).add_block(block)
 
@@ -118,7 +118,7 @@ def getWalletBlockWithBalance(balance, db, gateway=None):
             previous=before,
             links=gateway
             )
-    db.add_block(req)
+    db.add_block(req, True) # force
     db.add_block(
             TestBlock(
                 key=gateway,

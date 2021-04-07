@@ -47,7 +47,7 @@ class TestEuroTokenBlock(unittest.TestCase):
         Test validating a genesis block with an unearned balance
         """
         db = MockDatabase()
-        prev = TestBlock(block_type=BlockTypes.CHECKPOINT, transaction={'balance': 1})
+        prev = TestBlock(block_type=BlockTypes.TRANSFER, transaction={'balance': 1, 'amount':5})
         result, errors = prev.validate_transaction(db)
         self.assertEqual(result, ValidationResult.invalid)
         self.assertIsInstance(errors[0], EuroTokenBlock.InvalidBalance)
@@ -187,8 +187,8 @@ class TestEuroTokenBlock(unittest.TestCase):
                 links=G
                 )
         result, errors = A3.validate_transaction(db)
-        self.assertEqual(result, ValidationResult.partial_previous)
-        self.assertIsInstance(errors[0], EuroTokenBlock.PartialPrevious)
+        self.assertEqual(result, ValidationResult.missing)
+        self.assertEqual(errors, [EuroTokenBlock.BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
 
     def test_get_balance_receive_block_with_crawl(self):
         db = MockDatabase()
