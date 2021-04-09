@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+
+  gateway:
+    # restart: always
+    build:
+      context: ./backend
+    command: sh -c "python -u run_eval.py"
+    ports:
+      - "8090:8090/udp"
+    volumes:
+      - ./backend/eval/keys:/vol/keys
+    environment:
+      - KEY=GATEWAY
+
+  client:
+    # restart: always
+    build:
+      context: ./backend
+    command: sh -c "python -u run_eval.py"
+    # >> /vol/logs/run.log 2>&1"
+    ports:
+      - "8091-8100:8090/udp"
+    volumes:
+      - ./backend/eval/keys:/vol/keys
+    depends_on:
+      - gateway
+      # - /opt/eurotoken/database:/vol/database
+      # - ./backend/.local:/vol/database
+      # - ~/.ssh/eurotoken:/vol/keys

@@ -1,6 +1,6 @@
 from test.blockchain.ipv8.trustchain.blocks.util import TestBlock, MockDatabase, TestWallet, getWalletBlockWithBalance
 
-from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GENESIS_SEQ, TrustChainBlock, ValidationResult
+from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GENESIS_SEQ, TrustChainBlock, ValidationResult, BlockRange
 
 from blockchain.ipv8.trustchain.blocks.checkpoint  import EuroTokenCheckpointBlock
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
@@ -69,7 +69,7 @@ class TestEuroTokenCheckpoint(unittest.TestCase):
                 )
         result, errors = A2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenCheckpointBlock.BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
+        self.assertEqual(errors, [BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
 
     def test_checkpoint_missing_2_ago(self):
         """
@@ -239,12 +239,12 @@ class TestEuroTokenCheckpoint(unittest.TestCase):
         # Must be MISSING
         result, errors = A2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenCheckpointBlock.BlockRange(B3.public_key, B3.sequence_number, B3.sequence_number)])
+        self.assertEqual(errors, [BlockRange(B3.public_key, B3.sequence_number, B3.sequence_number)])
         db.add_block(B3) #add after crawl (half checkpoint)
 
         result, errors = A2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenCheckpointBlock.BlockRange(B2.public_key, B2.sequence_number, B2.sequence_number)])
+        self.assertEqual(errors, [BlockRange(B2.public_key, B2.sequence_number, B2.sequence_number)])
         db.add_block(B2) #add after crawl
         db.add_block(G2) #add after crawl
 

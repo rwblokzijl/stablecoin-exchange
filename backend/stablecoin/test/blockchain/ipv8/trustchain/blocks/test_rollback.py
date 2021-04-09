@@ -1,6 +1,6 @@
 from test.blockchain.ipv8.trustchain.blocks.util import TestBlock, MockDatabase, TestWallet, getWalletBlockWithBalance
 
-from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GENESIS_SEQ, TrustChainBlock, ValidationResult
+from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GENESIS_SEQ, TrustChainBlock, ValidationResult, BlockRange
 
 from blockchain.ipv8.trustchain.blocks.base        import EuroTokenBlock
 from blockchain.ipv8.trustchain.blocks.rollback    import EuroTokenRollBackBlock
@@ -145,7 +145,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
 
         result, errors = A2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.valid)
-        # self.assertEqual(errors, [EuroTokenRollBackBlock.BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
+        # self.assertEqual(errors, [BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
 
     def test_invalid_amount(self):
         """
@@ -271,7 +271,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
 
         result, errors = B2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenBlock.BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
+        self.assertEqual(errors, [BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
         db.add_block(B2)
 
         A1 = TestBlock(
@@ -295,7 +295,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
                 )
         result, errors = A2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenBlock.BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
+        self.assertEqual(errors, [BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
         db.add_block(A2)
 
         # A adds a rollback block
@@ -321,7 +321,6 @@ class TestEuroTokenRollBack(unittest.TestCase):
         result, errors = A4.validate_transaction(db)
         self.assertEqual(errors, [])
         self.assertEqual(result, ValidationResult.valid)
-        self.assertEqual(A4.should_sign(db), True)
         db.add_block(A4)
 
     def test_invalid_transaction_and_incorrect_rollback(self):
@@ -366,7 +365,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
 
         result, errors = B2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing) #Note send is invalid
-        self.assertEqual(errors, [EuroTokenBlock.BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
+        self.assertEqual(errors, [BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
         db.add_block(B2) #added without crawl, because provided by A
 
         A1 = TestBlock(
@@ -390,8 +389,7 @@ class TestEuroTokenRollBack(unittest.TestCase):
                 )
         result, errors = A2.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenBlock.BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
-        self.assertEqual(A2.should_sign(db), False)
+        self.assertEqual(errors, [BlockRange(B1.public_key, B1.sequence_number, B1.sequence_number)])
         db.add_block(A2)
 
         # A adds an incorrect rollback block
@@ -417,4 +415,3 @@ class TestEuroTokenRollBack(unittest.TestCase):
         result, errors = A4.validate_transaction(db)
         self.assertEqual(result, ValidationResult.invalid)
         self.assertIsInstance(errors[0], EuroTokenBlock.InvalidRollback)
-        self.assertEqual(A4.should_sign(db), False)

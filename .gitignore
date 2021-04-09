@@ -4,6 +4,7 @@ backend/.local
 backend/stablecoin/htmlcov
 backend/stablecoin/.coverage
 backend/.coverage
+backend/eval
 frontend/.DS_Store
 frontend/node_modules
 frontend/dist/

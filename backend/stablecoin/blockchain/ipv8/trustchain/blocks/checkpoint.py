@@ -78,6 +78,7 @@ class EuroTokenCheckpointBlock(EuroTokenBlock):
     def validate_eurotoken_transaction_proposal(self, persistence):
         # if not self.is_valid_gateway(): # maybe verify this somehow
             # raise self.InvalidSend("UnsanctionedGateway checkpoint")
+
         if ( self.link_public_key == persistence.my_pk and # for me
                 not persistence.get_linked(self)): #not signed
 

@@ -1,5 +1,5 @@
 from pyipv8.ipv8.attestation.trustchain.block    import GENESIS_HASH, UNKNOWN_SEQ, GENESIS_SEQ
-from pyipv8.ipv8.attestation.trustchain.block    import TrustChainBlock, ValidationResult
+from pyipv8.ipv8.attestation.trustchain.block    import TrustChainBlock, ValidationResult, BlockRange
 from pyipv8.ipv8.attestation.trustchain.listener import BlockListener
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
 
@@ -9,7 +9,7 @@ from enum     import Enum
 import logging
 import traceback
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 class EuroTokenBlock(TrustChainBlock):
 
@@ -26,7 +26,7 @@ class EuroTokenBlock(TrustChainBlock):
         linked = persistence.get_linked(self)
         if not linked:
             raise self.MissingBlocks([ # Crawl for self to get linked
-                self.BlockRange( self.public_key, self.sequence_number, self.sequence_number
+                BlockRange( self.public_key, self.sequence_number, self.sequence_number, "Missing linked"
                     )])
         return linked
 
@@ -70,7 +70,7 @@ class EuroTokenBlock(TrustChainBlock):
         blockBefore = self.get_block_before(block, persistence)
         if not blockBefore:
             raise self.MissingBlocks([
-                self.BlockRange(block.public_key, block.sequence_number-1, block.sequence_number-1
+                BlockRange(block.public_key, block.sequence_number-1, block.sequence_number-1, "Missing Block"
                     )])
         if blockBefore.type not in BlockTypes.EUROTOKEN_TYPES: #Go back one more block
             return self.get_block_before_or_raise(blockBefore, persistence)
@@ -105,8 +105,8 @@ class EuroTokenBlock(TrustChainBlock):
                 return []
             else:
                 #Found un-linked checkpoint, we should crawl it to ensure linked blocks, add to range and recurse
-                return self.get_unlinked_checkpoint_ranges(blockBefore, persistence) + [self.BlockRange(
-                    blockBefore.publicKey, blockBefore.sequence_number, blockBefore.sequence_number)]
+                return self.get_unlinked_checkpoint_ranges(blockBefore, persistence) + [BlockRange(
+                    blockBefore.public_key, blockBefore.sequence_number, blockBefore.sequence_number, "Missing linked")]
         else:
             return self.get_unlinked_checkpoint_ranges(blockBefore, persistence)
 
@@ -135,7 +135,6 @@ class EuroTokenBlock(TrustChainBlock):
             raise self.InsufficientBalance(f'block balance ({self.sequence_number}): {self.transaction["balance"]} is negative')
         if self.transaction["balance"] != balanceBefore + balanceChange:
             raise self.InvalidBalance(f'block balance ({self.sequence_number}): {self.transaction["balance"]} does not match calculated balance: {balanceBefore} + {balanceChange} ')
-        self.validate
 
         self.verify_balance_available_for_block(self, persistence)
 
@@ -153,30 +152,16 @@ class EuroTokenBlock(TrustChainBlock):
     def validate_transaction(self, persistence):
         try:
             self.validate_eurotoken_transaction(persistence)
+            self._logger.info(f"Valid, {self}")
             return ValidationResult.valid, []
-        # except self.PartialPrevious as e:
-        #     return ValidationResult.partial_previous, [e]
         except self.Invalid as e:
+            self._logger.warning(f"Invalid, {self}, {e}")
             return ValidationResult.invalid, [e]
         except self.MissingBlocks as e:
+            self._logger.info(f"Missing, {self}, {e}")
             return ValidationResult.missing, e.block_range
 
-    @dataclass
-    class BlockRange:
-        public_key: bytes
-        first: int
-        last: int
-
-        def __repr__(self):
-            return f"{hexlify(self.public_key)}:{self.first}-{self.last}"
-
-        def __str__(self):
-            return self.__repr__()
-
     class ValidationResultException(Exception):
-        pass
-
-    class PartialPrevious(ValidationResultException):
         pass
 
     class MissingBlocks(ValidationResultException):
@@ -208,16 +193,6 @@ class EuroTokenBlock(TrustChainBlock):
     class InvalidRollback(Invalid):
         pass
 
-    def should_sign(self, persistence):
-        try:
-            self.validate_eurotoken_transaction(persistence)
-            return True
-        except Exception as e:
-            # print(e)
-            # traceback.print_exc()
-            # This happens if the block should be persisted, but NOT signed
-            return False
-
     def __str__(self):
         # This makes debugging and logging easier
         trans = self.transaction
@@ -244,5 +219,5 @@ class EuroTokenBlockListener(BlockListener):
         self.logger.info(f"Got block {block}")
 
     def should_sign(self, block):
-        return block.should_sign(self.community.persistence)
+        return True
 

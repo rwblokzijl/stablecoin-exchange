@@ -2,7 +2,7 @@ from test.blockchain.ipv8.trustchain.blocks.util import TestBlock, MockDatabase,
 
 from blockchain.ipv8.trustchain.community import MyTrustChainCommunity
 
-from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GENESIS_SEQ, TrustChainBlock, ValidationResult
+from pyipv8.ipv8.attestation.trustchain.block import EMPTY_SIG, GENESIS_HASH, GENESIS_SEQ, TrustChainBlock, ValidationResult, BlockRange
 
 from blockchain.ipv8.trustchain.blocks.base        import EuroTokenBlockListener, EuroTokenBlock
 from blockchain.ipv8.trustchain.blocks.block_types import BlockTypes
@@ -20,6 +20,22 @@ class TestEuroTokenBlock(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def test_block_range(self):
+        self.assertEqual(
+                BlockRange(
+                    "a",
+                    1,
+                    2,
+                    "Reason 1"
+                    ),
+                BlockRange(
+                    "a",
+                    1,
+                    2,
+                    "Reason 2"
+                    ),
+                )
 
     def test_init(self):
         "Test the creation of a block"
@@ -188,7 +204,7 @@ class TestEuroTokenBlock(unittest.TestCase):
                 )
         result, errors = A3.validate_transaction(db)
         self.assertEqual(result, ValidationResult.missing)
-        self.assertEqual(errors, [EuroTokenBlock.BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
+        self.assertEqual(errors, [BlockRange(A1.public_key, A1.sequence_number, A1.sequence_number)])
 
     def test_get_balance_receive_block_with_crawl(self):
         db = MockDatabase()

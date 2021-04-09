@@ -1,5 +1,5 @@
 from pyipv8.ipv8.attestation.trustchain.community import TrustChainCommunity
-from pyipv8.ipv8.keyvault.crypto                  import ECCrypto
+from pyipv8.ipv8.keyvault.crypto                  import default_eccrypto
 from pyipv8.ipv8.peer                             import Peer
 from pyipv8.ipv8.lazy_community                   import lazy_wrapper
 
@@ -15,10 +15,9 @@ from binascii import hexlify, unhexlify
 
 class MyTrustChainCommunity(TrustChainCommunity):
 
-    # master_peer = Peer(ECCrypto().generate_key(u"curve25519"))
-
     def __init__(self, *args, **kwargs):
         s = super(MyTrustChainCommunity, self).__init__(*args, **kwargs)
+
         self.add_listener(EuroTokenCheckpointBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.CHECKPOINT])
         self.add_listener(EuroTokenCreationBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.CREATION])
         self.add_listener(EuroTokenDestructionBlockListener(my_peer=self.my_peer, community=self), [BlockTypes.DESTRUCTION])
@@ -27,44 +26,55 @@ class MyTrustChainCommunity(TrustChainCommunity):
 
         return s
 
-        # self.eurotoken_blockchain.on_user_connection(payment_id, pubkey, peer.address[0], peer.address[1])
-
-    # def
-
     def set_callback_instance(self, eurotoken_blockchain):
         self.eurotoken_blockchain = eurotoken_blockchain
 
-    def started(self):
-        # pass
-        async def start_communication():
-            peers = self.get_peers()
-            print("N. peers: " + str(len(peers)))
-            for peer in peers:
-                print(peer)
-                # self.send_transaction(peer, 5)
-        # self.register_task("start_communication", start_communication, interval=5.0, delay=0)
+    def started(self): # entrypoint
+        pass
+
+    def get_my_latest_eurotoken(self, block=None):
+        if block is None:
+            block = self.persistence.get_latest(self.my_peer.public_key.key_to_bin())
+        if block is None:
+            return None
+        elif block.public_key != self.my_peer.public_key.key_to_bin():
+            raise Exception("This can only be called for yourself")
+        if block.type in BlockTypes.EUROTOKEN_TYPES:
+            return block
+        return self.persistence.get_block_before(block)
+
+    def get_my_balance(self):
+        blk = self.get_my_latest_eurotoken()
+        if blk is None:
+            return 0
+        return blk.get_balance(self.persistence)
+
+    def get_my_verified_balance(self):
+        blk = self.get_my_latest_eurotoken()
+        if blk is None:
+            return 0
+        return blk.get_verified_balance(self.persistence)
+
+    def get_peer_from_public_key(self, public_key):
+        if type(public_key) == bytes:
+            b = public_key
+            key = default_eccrypto.key_from_public_bin(public_key)
+        else:
+            b = public_key.key_to_bin()
+            key = public_key
+        for peer in self.get_peers():
+            if peer.public_key.key_to_bin() == b:
+                return peer
+        return Peer(key)
 
     def send_money(self, amount, public_key, ip, port, payment_id):
-        # key = b"LibNaCLPK:" + bytes.fromhex(public_key)
-        key = bytes.fromhex(public_key)
-        peer = Peer( ECCrypto().key_from_public_bin(key) )
+        peer = self.get_peer_from_public_key(unhexlify(public_key))
         peer.add_address((ip, port))
-        return self.send_transaction_to_peer(peer, amount, payment_id)
+        return self.send_creation(peer, amount, payment_id)
 
-    def get_known_balance_for_peer(self, peer):
-        key = b"LibNaCLPK:" + peer.public_key.key_to_bin()
-        latest = self.persistence.get_latest_blocks(key, limit=1, block_types=BlockTypes.EUROTOKEN_TYPES)
-        if len(latest)==1:
-            return latest[0].get_balance(self.persistence)
-        else:
-            return 0
-
-    def send_transaction_to_peer(self, peer, amount, payment_id):
-        # we dont know where the balance gets accepted in the receiver chain, so we dont know the balance
-        # balance = amount + self.get_known_balance_for_peer(peer)
+    def send_creation(self, peer, amount, payment_id=""):
         return self.sign_block(peer, public_key=peer.public_key.key_to_bin(), block_type=BlockTypes.CREATION, transaction={
             'amount': amount,
-            # 'balance': balance
             'payment_id': payment_id
             })
 
