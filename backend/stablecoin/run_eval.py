@@ -13,9 +13,15 @@ import socket, os
 from binascii import hexlify
 
 KEY              = os.environ.get('KEY', socket.gethostname()).strip()
-KEY_FILE         = f"/vol/keys/ec-{KEY}.pem"
-GATEWAY_KEY_FILE = "/vol/keys/ec-GATEWAY.pem"
-IS_GATEWAY       = (KEY == "GATEWAY")
+GATEWAYS         = int(os.environ.get('GATEWAYS', None))
+CLIENTS          = int(os.environ.get('CLIENTS',  None))
+
+IS_GATEWAY       = bool(os.environ.get('GATEWAY', False))
+if IS_GATEWAY:
+    KEY_FILE         = f"ec-g-{KEY}.pem"
+else:
+    KEY_FILE         = f"ec-c-{KEY}.pem"
+KEY_PATH         = "/vol/keys/" + KEY_FILE
 
 async def start_communities():
     ipv8_port = 8090
@@ -26,7 +32,7 @@ async def start_communities():
     configuration['keys'] = [{
         'alias': "my peer",
         'generation': u"curve25519",
-        'file': KEY_FILE
+        'file': KEY_PATH
         }]
     configuration['address'] = "0.0.0.0"
     configuration['logger'] = {
@@ -45,8 +51,9 @@ async def start_communities():
         'initialize': {
             'working_directory': f'/vol/database',
             'is_gateway': IS_GATEWAY,
-            'key': KEY,
-            'gateway_key': GATEWAY_KEY_FILE,
+            'n_gateways': GATEWAYS,
+            'n_clients': CLIENTS,
+            'key_file': KEY_FILE,
             'settings': settings
             },
         'on_start': [('started', )]

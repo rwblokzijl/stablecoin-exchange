@@ -37,15 +37,14 @@ clear:
 	rm backend/eval/keys/* || true
 
 eval1: clear
-	# touch backend/eval/keys/1
-	docker-compose -f docker-compose-eval.yml up --scale client=1 --build
+	SCALE=1 docker-compose -f docker-compose-eval.yml up --scale client=1 --build
 
 eval2: clear
-	docker-compose -f docker-compose-eval.yml up --scale client=2 --build
+	SCALE=2 docker-compose -f docker-compose-eval.yml up --scale client=2 --build
 
 eval4: clear
-	docker-compose -f docker-compose-eval.yml up --scale client=4 --build
+	SCALE=4 docker-compose -f docker-compose-eval.yml up --scale client=4 --build
 
 eval8: clear
-	docker-compose -f docker-compose-eval.yml up --scale client=8 --build
+	SCALE=8 docker-compose -f docker-compose-eval.yml up --scale client=8 --build
 
