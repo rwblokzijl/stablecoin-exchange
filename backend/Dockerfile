@@ -14,6 +14,7 @@ RUN apk del .tmp
 
 RUN mkdir -p /vol/database
 RUN mkdir -p /vol/logs
+RUN mkdir -p /vol/sync
 RUN adduser -D user
 RUN chown -R user:user /vol
 

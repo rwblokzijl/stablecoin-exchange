@@ -12,7 +12,9 @@ from blockchain.ipv8.trustchain.eval_database import EvalTrustChainDB
 from binascii import hexlify, unhexlify
 import socket, random, os
 
-from asyncio import sleep
+from asyncio import sleep, wait
+import time
+from pathlib import Path
 
 def pretty_peer(peer):
     if type(peer) == Peer:
@@ -28,46 +30,82 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
     DB_CLASS = EvalTrustChainDB
 
     def __init__(self, *args, **kwargs):
-        self.is_gateway = kwargs.pop('is_gateway')
-        self.key_file   = kwargs.pop('key_file')
-        self.n_gateways = kwargs.pop('n_gateways')
-        self.n_clients  = kwargs.pop('n_clients')
-        self.crawl_counter = {}
+        self.is_gateway                    = kwargs.pop('is_gateway')
+        self.key_file                      = kwargs.pop('key_file')
+        self.n_gateways                    = kwargs.pop('n_gateways')
+        self.n_clients                     = kwargs.pop('n_clients')
+        self.crawl_counter                 = {}
+        self.transactions_sent             = 0
+        self.transactions_since_checkpoint = 0
+        self.test_amount                   = 5
+        self.transactions_to_do            = kwargs.pop('transactions_to_do')
+        self.min_checkpoint_freq           = kwargs.pop('min_checkpoint_freq')
+        self.has_money                     = False
 
-        self.n_peers    = self.n_gateways+self.n_clients
-        self.already_sent = []
+        self.n_peers                       = self.n_gateways+self.n_clients
+        self.already_sent                  = []
 
         super(EvalTrustChainCommunity, self).__init__(*args, **kwargs)
 
-    async def wait_for_peer_keys(self):
-        all_keys = os.listdir("/vol/keys/")
-        while len(all_keys) != self.n_peers: # wait for all gateways and peers to generate their keys
-            await sleep(0.1)
-            all_keys = os.listdir("/vol/keys/")
+    def set_stop(self, stop):
+        self.stop = stop
+
+    async def sync_peers(self, sync_id, wait=0.1, print=lambda *args: None):
+        print("sync: " + sync_id)
+        Path('/vol/sync/' +sync_id+ "_"+self.key_file).touch()
+
+        all_files = [filename for filename in os.listdir("/vol/sync/") if filename.startswith(sync_id+"_")]
+        print(all_files)
+        while len(all_files) != self.n_peers: # wait for all gateways and peers to generate their files
+            print(all_files)
+            await sleep(wait)
+            all_files = [filename for filename in os.listdir("/vol/sync/") if filename.startswith(sync_id+"_")]
+        # os.remove('/vol/sync/' +sync_id+ "_"+self.key_file)
+        print("done: " + sync_id)
+
+    def sync_next(self, sync_id, name, task, interval=None, delay=None, wait=1, print=lambda *args: None):
+        print("sync: " + sync_id)
+        Path('/vol/sync/' +sync_id+ "_"+self.key_file).touch()
+
+        def attempt_ready():
+            all_files = [filename for filename in os.listdir("/vol/sync/") if filename.startswith(sync_id+"_")]
+            if len(all_files) == self.n_peers: # wait for all gateways and peers to generate their files
+                self.replace_task(sync_id, lambda: None)
+                self.register_task(name, task, interval=interval, delay=delay)
+            else:
+                print(all_files)
+
+        self.register_task(sync_id, attempt_ready, interval=wait)
+
+        # os.remove('/vol/sync/' +sync_id+ "_"+self.key_file)
+        print("done: " + sync_id)
 
     def send_crawl_request(self, peer, public_key, start_seq_num, end_seq_num, for_half_block=None):
         if for_half_block:
             self.crawl_counter[for_half_block.block_id] = self.crawl_counter.get(for_half_block.block_id, 0) + 1
         return super(EvalTrustChainCommunity, self).send_crawl_request(peer, public_key, start_seq_num, end_seq_num, for_half_block)
 
-    def log_extra_validate(self, block):
+    def measure_database_and_time(self, func, *args, **kwargs):
         self.persistence.reset_counter()
-        block.validate(self.persistence)
-        val = self.persistence.counter
+
+        t = time.process_time()
+        func(*args, **kwargs)
+        elapsed_time = time.process_time() - t
+
+        database_lookups = self.persistence.counter
         self.persistence.reset_counter()
-        block.validate_transaction(self.persistence)
-        trans = self.persistence.counter
-        self.persistence.reset_counter()
-        return val, trans
+        return database_lookups, elapsed_time
+
+    def time_last_validate(self, block):
+        n_crawled = self.crawl_counter.pop(block.block_id, 0)
+        db_lookups, processing_time = self.measure_database_and_time(block.validate_transaction, self.persistence)
+        print(f"{pretty_block(block)} M {n_crawled} E {db_lookups} {processing_time} ")
 
     def sign_block(self, peer, public_key=EMPTY_PK, block_type=b'unknown', transaction=None, linked=None, additional_info=None):
-        if linked and linked.block_id in self.crawl_counter:
-            print(f"{pretty_block(linked)} M {self.crawl_counter[linked.block_id]}")
-            del self.crawl_counter[linked.block_id]
-            ans = self.log_extra_validate(linked)
-            print(f"{pretty_block(linked)} D {ans[0]}")
-            print(f"{pretty_block(linked)} E {ans[1]}")
-        return super(EvalTrustChainCommunity, self).sign_block(peer, public_key, block_type, transaction, linked, additional_info)
+        if linked:
+            self.time_last_validate(linked)
+        ans = super(EvalTrustChainCommunity, self).sign_block(peer, public_key, block_type, transaction, linked, additional_info)
+        return ans
 
     def set_gateway(self):
         """
@@ -81,6 +119,11 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         with open(gateway_key, 'rb') as f:
             content = f.read()
         self.gateway_key = default_eccrypto.key_from_private_bin(content).pub()
+
+    def get_delay(self):
+        all_keys = os.listdir("/vol/keys/")
+        all_keys.sort()
+        return all_keys.index(self.key_file) / self.n_clients
 
     def set_clients(self):
         """
@@ -114,7 +157,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         return self.get_peer_from_public_key(self.gateway_key)
 
     async def started(self):
-        await self.wait_for_peer_keys()
+        await self.sync_peers("startup")
 
         if self.is_gateway:
             self.set_clients()
@@ -130,14 +173,18 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
             for client in self.valid_peers:
                 print(f"Peer: {pretty_peer(self.get_peer_from_public_key(client))}")
 
+        await self.sync_peers("wait_for_config")
 
         if self.is_gateway:
-            self.register_task("do_checkpoint", self.gateway_create_money_to_all, interval=5.0, delay=1.0)
+            self.register_task("create_money", self.gateway_create_money_to_all, delay=2+self.get_delay())
         else:
-            self.replace_task("send_random_money", self.send_random_money, interval=1, delay=1)
+            self.sync_next("await_money", "send_random_money", self.send_random_money, interval=1, delay=1
+                    )
+                    # , print=print)
 
     @synchronized
-    def eval_send_money(self, peer, amount=5):
+    def eval_send_money(self, peer, amount=None):
+        amount=amount or self.test_amount
         my_balance = self.get_my_balance()
         if my_balance < amount:
             self._logger.error("INSUFFICIENT BALANCE") #only happens in tight race condition
@@ -153,20 +200,28 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
 
     @synchronized
     def request_checkpoint(self):
+        self.transactions_since_checkpoint = 0
         gateway = self.get_gateway()
         my_balance = self.get_my_balance()
         return self.sign_block(gateway, public_key=gateway.public_key.key_to_bin(), block_type=BlockTypes.CHECKPOINT, transaction={
             'balance': my_balance
             })
 
-    async def gateway_create_money_to_all(self, amount=100):
-        for client in self.my_clients:
-            if client not in self.already_sent:
-                peer = self.get_peer_from_public_key(client)
-                # self.pprint("C", None, amount, peer=peer)
-                resp, prop = await self.send_creation(peer, amount)
-                self.pprint("C", None, amount, resp, prop)
-                self.already_sent.append(client)
+    async def gateway_create_money_to_all(self, amount=None):
+        amount= amount or self.transactions_to_do * self.test_amount
+        while len(self.my_clients) != len(self.already_sent):
+            futures = []
+            for client in self.my_clients:
+                if client not in self.already_sent:
+                    peer = self.get_peer_from_public_key(client)
+                    # futures.append(self.await_and_time(self.send_creation, peer, amount))
+                    await self.await_and_time(self.send_creation, peer, amount)
+                    self.already_sent.append(client)
+            # await wait(futures)
+
+        # wait for clients to do their thing
+        self.sync_next("await_money", "await", self.await_shutdown)
+        # await self.await_shutdown()
 
     def get_random_peer(self):
         client = random.choice(self.valid_peers)
@@ -177,44 +232,55 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         if peer:
             return await self.eval_attempt_send_money(peer, amount)
 
+    async def await_shutdown(self):
+        await self.sync_peers("shutdown", 1)
+        self.stop()
+
     async def eval_attempt_send_money(self, peer, amount=5):
         with self.receive_block_lock:
             my_balance = self.get_my_balance()
             verified_balance = self.get_my_verified_balance() - amount
         if my_balance < amount:
             return
-        if verified_balance < 0:
-            # self.pprint("V", my_balance, amount, peer=peer)
-            resp, prop = await self.request_checkpoint()
-            self.pprint("V", my_balance, None, resp, prop)
-        # self.pprint("T", my_balance - amount, amount, peer=peer)
-        resp, prop = await self.eval_send_money(peer, amount) #future
-        self.pprint("T", my_balance - amount, amount, resp, prop)
+        if verified_balance < 0 or self.transactions_since_checkpoint >= self.min_checkpoint_freq:
+            await self.await_and_time(self.request_checkpoint)
+        resp, prop = await self.await_and_time(self.eval_send_money, peer, amount)
+        self.transactions_sent += 1
+        self.transactions_since_checkpoint += 1
+        if self.transactions_sent >= self.transactions_to_do:
+            self.replace_task("send_random_money", self.await_shutdown)
 
-    def pprint(self, block_type, balance, amount, resp=None, prop=None, peer=None):
-        if not any([prop, peer, resp]):
-            self._logger.error("CANCELED")
-            return
+    async def await_and_time(self, func, *args, **kwargs):
+        t = time.process_time()
+        future = func(*args, **kwargs)
+        processing_time = time.process_time() - t
+        resp, prop = await future
+        wait_time = time.process_time() - t
+        if not prop or not resp:
+            return None, None
+        self.pprint(prop, resp, processing_time, wait_time)
+        return resp, prop
 
-        if prop:
-            fr = pretty_peer(prop.public_key) + f":{prop.sequence_number: <4}"
-        else:
-            fr = self.next_block_id()
-
-        if resp:
-            to = pretty_peer(resp.public_key) + f":{resp.sequence_number: <4}"
-        else:
-            to = pretty_peer(peer) + ":?"
+    def pprint(self, prop, resp, processing_time, wait_time):
+        type_map = {
+                BlockTypes.CHECKPOINT : "V",
+                BlockTypes.TRANSFER : "T",
+                BlockTypes.CREATION : "C"
+                }
+        balance = prop.transaction.get("balance", None)
+        amount  = prop.transaction.get("amount", None)
 
         if type(balance) == int:
             balance = f"{balance: <4}"
         else:
             balance = "    "
+
         if type(amount) == int:
             amount = f"{amount: <4}"
         else:
             amount = "    "
-        print (f"{fr} {block_type} {balance} - {amount} -> {to}")
+
+        print (f"{pretty_block(prop)} {type_map[prop.type]} {balance} - {amount} -> {pretty_block(resp)} in {processing_time}/{wait_time} s")
 
     def next_block_id(self):
         key = pretty_peer(self.my_peer)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from asyncio import ensure_future, get_event_loop
+from asyncio import ensure_future, get_event_loop, sleep
 
 from blockchain.ipv8.trustchain.eval_community import EvalTrustChainCommunity
 
@@ -12,9 +12,11 @@ import socket, os
 
 from binascii import hexlify
 
-KEY              = os.environ.get('KEY', socket.gethostname()).strip()
-GATEWAYS         = int(os.environ.get('GATEWAYS', None))
-CLIENTS          = int(os.environ.get('CLIENTS',  None))
+KEY                = os.environ.get('KEY', socket.gethostname()).strip()
+GATEWAYS           = int(os.environ.get('GATEWAYS', None))
+CLIENTS            = int(os.environ.get('CLIENTS',  None))
+TRANSACTIONS_TO_DO = int(os.environ.get('TRANSACTIONS_TO_DO',  None))
+CHECKPOINT_EVERY   = int(os.environ.get('CHECKPOINT_EVERY',  None))
 
 IS_GATEWAY       = bool(os.environ.get('GATEWAY', False))
 if IS_GATEWAY:
@@ -22,6 +24,9 @@ if IS_GATEWAY:
 else:
     KEY_FILE         = f"ec-c-{KEY}.pem"
 KEY_PATH         = "/vol/keys/" + KEY_FILE
+
+STOP=False
+ipv8=None
 
 async def start_communities():
     ipv8_port = 8090
@@ -54,16 +59,32 @@ async def start_communities():
             'n_gateways': GATEWAYS,
             'n_clients': CLIENTS,
             'key_file': KEY_FILE,
-            'settings': settings
+            'settings': settings,
+            'transactions_to_do': TRANSACTIONS_TO_DO,
+            'min_checkpoint_freq': CHECKPOINT_EVERY,
             },
         'on_start': [('started', )]
         }]
-
+    global ipv8
     ipv8 = IPv8(configuration, extra_communities={'EvalTrustChainCommunity': EvalTrustChainCommunity})
+    def stop():
+        global STOP
+        STOP=True
+    ipv8.get_overlay(EvalTrustChainCommunity).set_stop(stop)
     await ipv8.start()
+
+async def stopper():
+    while True:
+        global STOP
+        global ipv8
+        if STOP:
+            await ipv8.stop()
+            STOP=False
+        await sleep(0.5)
 
 def main():
     ensure_future(start_communities())
+    ensure_future(stopper())
     get_event_loop().run_forever()
 
 if __name__ == '__main__':

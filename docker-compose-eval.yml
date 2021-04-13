@@ -11,10 +11,13 @@ services:
     #   - "8090:8090/udp"
     volumes:
       - ./backend/eval/keys:/vol/keys
+      - sync:/vol/sync
     environment:
       - GATEWAY=1
       - GATEWAYS=${GATEWAYS}
       - CLIENTS=${CLIENTS}
+      - TRANSACTIONS_TO_DO=${TRANSACTIONS_TO_DO}
+      - CHECKPOINT_EVERY=${CHECKPOINT_EVERY}
   client:
     # restart: always
     build:
@@ -25,6 +28,7 @@ services:
     #   - "8091-8100:8090/udp"
     volumes:
       - ./backend/eval/keys:/vol/keys
+      - sync:/vol/sync
     depends_on:
       - gateway
       # - /opt/eurotoken/database:/vol/database
@@ -33,3 +37,9 @@ services:
     environment:
       - CLIENTS=${CLIENTS}
       - GATEWAYS=${GATEWAYS}
+      - TRANSACTIONS_TO_DO=${TRANSACTIONS_TO_DO}
+      - CHECKPOINT_EVERY=${CHECKPOINT_EVERY}
+
+volumes:
+  sync:
+
