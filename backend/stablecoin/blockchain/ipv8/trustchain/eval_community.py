@@ -280,7 +280,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         else:
             amount = "    "
 
-        print (f"{pretty_block(prop)} {type_map[prop.type]} {balance} - {amount} -> {pretty_block(resp)} in {processing_time}/{wait_time} s")
+        print (f"{pretty_block(prop)} {type_map[prop.type]} {balance} - {amount} -> {pretty_block(resp)} TD {self.transactions_sent} LC {self.transactions_since_checkpoint} T {processing_time}/{wait_time} s")
 
     def next_block_id(self):
         key = pretty_peer(self.my_peer)
