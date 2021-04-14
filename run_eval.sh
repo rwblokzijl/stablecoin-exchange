@@ -33,9 +33,9 @@ do
 
     docker system prune -f
     docker volume rm gateway_sync
+    docker network prune
     rm backend/eval/keys/* || true
     docker-compose -f docker-compose-eval.yml up --scale gateway=$GATEWAYS --scale client=$CLIENTS --build | tee eval_data/$a.log
     rm backend/eval/keys/* || true
-
 done
 
