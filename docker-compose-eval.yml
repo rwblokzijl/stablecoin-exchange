@@ -13,7 +13,7 @@ services:
       - ./backend/eval/keys:/vol/keys
       - sync:/vol/sync
     environment:
-      - GATEWAY=1
+      - IS_GATEWAY=1
       - GATEWAYS=${GATEWAYS}
       - CLIENTS=${CLIENTS}
       - TRANSACTIONS_TO_DO=${TRANSACTIONS_TO_DO}

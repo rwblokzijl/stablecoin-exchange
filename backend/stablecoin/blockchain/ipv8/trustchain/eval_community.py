@@ -30,16 +30,21 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
     DB_CLASS = EvalTrustChainDB
 
     def __init__(self, *args, **kwargs):
+        self.base_dir                      = kwargs.pop('base_dir')
+        self.sync_dir                      = os.path.join(self.base_dir, 'sync/')
+        self.keys_dir                      = os.path.join(self.base_dir, 'keys/')
+
         self.is_gateway                    = kwargs.pop('is_gateway')
         self.key_file                      = kwargs.pop('key_file')
         self.n_gateways                    = kwargs.pop('n_gateways')
         self.n_clients                     = kwargs.pop('n_clients')
+        self.transactions_to_do            = kwargs.pop('transactions_to_do')
+        self.min_checkpoint_freq           = kwargs.pop('min_checkpoint_freq')
+
         self.crawl_counter                 = {}
         self.transactions_sent             = 0
         self.transactions_since_checkpoint = 0
         self.test_amount                   = 5
-        self.transactions_to_do            = kwargs.pop('transactions_to_do')
-        self.min_checkpoint_freq           = kwargs.pop('min_checkpoint_freq')
         self.has_money                     = False
 
         self.n_peers                       = self.n_gateways+self.n_clients
@@ -52,23 +57,23 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
 
     async def sync_peers(self, sync_id, wait=0.1, print=lambda *args: None):
         print("sync: " + sync_id)
-        Path('/vol/sync/' +sync_id+ "_"+self.key_file).touch()
+        (Path(self.sync_dir) / Path(sync_id+ "_"+self.key_file)).touch()
 
-        all_files = [filename for filename in os.listdir("/vol/sync/") if filename.startswith(sync_id+"_")]
+        all_files = [filename for filename in os.listdir(self.sync_dir) if filename.startswith(sync_id+"_")]
         print(all_files)
         while len(all_files) != self.n_peers: # wait for all gateways and peers to generate their files
             print(all_files)
             await sleep(wait)
-            all_files = [filename for filename in os.listdir("/vol/sync/") if filename.startswith(sync_id+"_")]
-        # os.remove('/vol/sync/' +sync_id+ "_"+self.key_file)
+            all_files = [filename for filename in os.listdir(self.sync_dir) if filename.startswith(sync_id+"_")]
+        # os.remove(self.sync_dir +sync_id+ "_"+self.key_file)
         print("done: " + sync_id)
 
     def sync_next(self, sync_id, name, task, interval=None, delay=None, wait=1, print=lambda *args: None):
         print("sync: " + sync_id)
-        Path('/vol/sync/' +sync_id+ "_"+self.key_file).touch()
+        (Path(self.sync_dir) / Path(sync_id+ "_"+self.key_file)).touch()
 
         def attempt_ready():
-            all_files = [filename for filename in os.listdir("/vol/sync/") if filename.startswith(sync_id+"_")]
+            all_files = [filename for filename in os.listdir(self.sync_dir) if filename.startswith(sync_id+"_")]
             if len(all_files) == self.n_peers: # wait for all gateways and peers to generate their files
                 self.replace_task(sync_id, lambda: None)
                 self.register_task(name, task, interval=interval, delay=delay)
@@ -77,7 +82,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
 
         self.register_task(sync_id, attempt_ready, interval=wait)
 
-        # os.remove('/vol/sync/' +sync_id+ "_"+self.key_file)
+        # os.remove(self.sync_dir +sync_id+ "_"+self.key_file)
         print("done: " + sync_id)
 
     def send_crawl_request(self, peer, public_key, start_seq_num, end_seq_num, for_half_block=None):
@@ -111,17 +116,17 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         """
         the gateway_index = client_index % n_gateways
         """
-        all_keys = os.listdir("/vol/keys/")
+        all_keys = os.listdir(self.keys_dir)
         all_keys.sort()
         my_index = all_keys.index(self.key_file)
-        gateway_key = "/vol/keys/" + all_keys[self.n_clients + my_index%self.n_gateways]
+        gateway_key = self.keys_dir + all_keys[self.n_clients + my_index%self.n_gateways]
 
         with open(gateway_key, 'rb') as f:
             content = f.read()
         self.gateway_key = default_eccrypto.key_from_private_bin(content).pub()
 
     def get_delay(self):
-        all_keys = os.listdir("/vol/keys/")
+        all_keys = os.listdir(self.keys_dir)
         all_keys.sort()
         return all_keys.index(self.key_file) / self.n_clients
 
@@ -130,12 +135,12 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         All clients where my_index = client_index % n_gateways
         """
         self.my_clients = []
-        all_keys = os.listdir("/vol/keys/")
+        all_keys = os.listdir(self.keys_dir)
         all_keys.sort()
         my_index = all_keys.index(self.key_file) - self.n_clients
         for n in range(self.n_clients):
             if n % self.n_gateways == my_index:
-                client_key = "/vol/keys/" + all_keys[n]
+                client_key = self.keys_dir + all_keys[n]
 
                 with open(client_key, 'rb') as f:
                     content = f.read()
@@ -143,13 +148,13 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
 
     def set_valid_peers(self):
         self.valid_peers = []
-        all_keys = os.listdir("/vol/keys/")
+        all_keys = os.listdir(self.keys_dir)
         all_keys.sort()
         for n in range(self.n_clients):
             client_key = all_keys[n]
             if client_key == self.key_file:
                 continue
-            with open("/vol/keys/" + client_key, 'rb') as f:
+            with open(self.keys_dir + client_key, 'rb') as f:
                 content = f.read()
             self.valid_peers.append(default_eccrypto.key_from_private_bin(content).pub())
 
