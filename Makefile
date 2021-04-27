@@ -28,6 +28,7 @@ restart:
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml restart
 
 deploy: lock
+	cd frontend && npm run build
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d --build
 
 deploya: lock
