@@ -218,21 +218,9 @@ class StablecoinInteractor:
 
         self.persistence.update_transaction(transaction)
 
+        self.logger.warning(f"PAYMENT_RECEIVED: payout {transaction['amount']} to {transaction['payout_connection_data']}")
+
         return transaction # TODO: Return or raise what ipv8 expects
-
-    "Other"
-
-    # def get_wallet_transactions(self, wallet):
-    #     return [transaction for transaction in self.persistence.get_all().values() if
-    #             (transaction['payment_provider'] == 'blockchain' and transaction.get("counterparty_account") == wallet) or
-    #             (transaction['payout_provider'] == 'blockchain' and transaction["payout_account"] == wallet)
-    #             ]
-
-    # def get_iban_transactions(self, iban):
-    #     return [transaction for transaction in self.persistence.get_all().values() if
-    #             (transaction['payment_provider'] == 'bank' and transaction.get("counterparty_account") == iban) or
-    #             (transaction['payout_provider'] == 'bank' and transaction["payout_account"] == iban)
-    #             ]
 
     def print_struct(self):
         self.logger.warning(self.bank)
