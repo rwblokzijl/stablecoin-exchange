@@ -28,13 +28,19 @@ restart:
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml restart
 
 deploy: lock
+	cd frontend && npm run build
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d --build
 
 deploya: lock
 	COMPOSE_PROJECT_NAME=eurotoken docker-compose -H ssh://bloodyfool@161.97.114.29 -f docker-compose-deploy.yml up -d --build app
 
 clear:
-	rm backend/eval/keys/* || true
+	@(rm backend/eval/keys/*          || true) > /dev/null 2>&1
+	@(rm backend/eval/keys/sync/*     || true) > /dev/null 2>&1
+	@(rm backend/eval/keys/database/* || true) > /dev/null 2>&1
+
+eval: clear
+	bash ./run_eval.sh
 
 eval1: clear
 	SCALE=1 docker-compose -f docker-compose-eval.yml up --scale client=1 --build

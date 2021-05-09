@@ -8,28 +8,48 @@ from pyipv8.ipv8.attestation.trustchain.settings import TrustChainSettings
 from pyipv8.ipv8.configuration import get_default_configuration
 from pyipv8.ipv8_service import IPv8
 
-import socket, os
+import socket, os, time
 
 from binascii import hexlify
 
-KEY                = os.environ.get('KEY', socket.gethostname()).strip()
+PORT               = int(os.environ.get('PORT', 8090))
+KEY                = os.environ.get('KEY', f"{socket.gethostname()}:{PORT}" ).strip()
+BASE_DIR           = os.environ.get('BASE_DIR', '/vol/').strip()
+
+# print()
+# print(KEY)
+# print(PORT)
+# print(BASE_DIR)
+
 GATEWAYS           = int(os.environ.get('GATEWAYS', None))
 CLIENTS            = int(os.environ.get('CLIENTS',  None))
 TRANSACTIONS_TO_DO = int(os.environ.get('TRANSACTIONS_TO_DO',  None))
 CHECKPOINT_EVERY   = int(os.environ.get('CHECKPOINT_EVERY',  None))
 
-IS_GATEWAY       = bool(os.environ.get('GATEWAY', False))
+# print(GATEWAYS)
+# print(CLIENTS)
+# print(TRANSACTIONS_TO_DO)
+# print(CHECKPOINT_EVERY)
+
+IS_GATEWAY       = bool(int(os.environ.get('IS_GATEWAY', 0)))
 if IS_GATEWAY:
     KEY_FILE         = f"ec-g-{KEY}.pem"
 else:
     KEY_FILE         = f"ec-c-{KEY}.pem"
-KEY_PATH         = "/vol/keys/" + KEY_FILE
+KEY_PATH         = os.path.join(BASE_DIR, "keys", KEY_FILE)
+
+print(IS_GATEWAY)
+print(KEY_FILE)
+# print(KEY_PATH)
+
 
 STOP=False
 ipv8=None
 
+# exit()
+
 async def start_communities():
-    ipv8_port = 8090
+    ipv8_port = PORT
     settings = TrustChainSettings()
     settings.broadcast_fanout = 0
     configuration = get_default_configuration()
@@ -54,7 +74,8 @@ async def start_communities():
                 }
             }],
         'initialize': {
-            'working_directory': f'/vol/database',
+            'base_dir': BASE_DIR,
+            'working_directory': os.path.join(BASE_DIR, 'database', KEY),
             'is_gateway': IS_GATEWAY,
             'n_gateways': GATEWAYS,
             'n_clients': CLIENTS,
@@ -89,6 +110,5 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
+    time.sleep(1)
 
