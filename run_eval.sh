@@ -1,35 +1,48 @@
 #!/bin/bash
 
-# export TRANSACTIONS_TO_DO=1024
-export TRANSACTIONS_TO_DO=10
+export TRANSACTIONS_TO_DO=1024
+# export TRANSACTIONS_TO_DO=10
 export PROCESSES=()
 
-# A=( 2:1:32 \
-#     2:2:32 \
-#     4:1:32 \
-#     4:2:32 \
-#     4:4:32 \
-#     8:1:32 \
-#     8:2:32 \
-#     8:4:32 \
-#     8:8:32 )
+# client:gateway:checkpoint_freq
+# exp 1: as function of users
+A=(
 
-A=( 3:1:16 \
-    5:1:16 \
-    6:1:16 \
-    7:1:16 \
-    9:1:16 \
-    10:1:16)
+    # 2:1:1 \
+    # 3:1:1 \
+    # 4:1:1 \
+    # 5:1:1 \
+    # 6:1:1 \
+    # 7:1:1 \
+    # 8:1:1 \
+    9:1:1 \
+    10:1:1 \
+    11:1:1 \
+    12:1:1 \
+    13:1:1 \
+    14:1:1 \
+    15:1:1 \
+    16:1:1 \
 
-# A=( 4:4:1 \
-#     4:4:2 \
-#     4:4:4 \
-#     4:4:8 \
-#     4:4:16)
+# # exp 2: as function of checkpoint_freq
+#     4:1:2 \
+#     4:1:4 \
+#     4:1:6 \
+#     4:1:8 \
+#     4:1:10 \
+#     4:1:12 \
+#     4:1:14 \
+#     4:1:16 \
+#     4:1:18 \
+#     4:1:20 \
 
-# A=( 2:1:2 \
-#     2:1:4)
+# # exp 3: as function of gateway count
+#     4:2:1 \
+#     4:4:1
 
+)
+
+# simple test
 # A=( 2:1:2 )
 
 function run_docker {
@@ -51,13 +64,9 @@ function clean_up {
 trap clean_up SIGHUP SIGINT SIGTERM
 
 function run_local {
-	(rm eval/keys/*          || true) > /dev/null 2>&1
-	(rm eval/sync/*     || true) > /dev/null 2>&1
-	(rm eval/database/* || true) > /dev/null 2>&1
-
-    # export CLIENTS=$CLIENTS
-    # export GATEWAYS=$GATEWAYS
-    # export CHECKPOINT_EVERY=$CHECKPOINT_EVERY
+    (rm eval/keys/*     || true) > /dev/null 2>&1
+    (rm eval/sync/*     || true) > /dev/null 2>&1
+    (rm eval/database/* || true) > /dev/null 2>&1
 
     export PORT=8090
     export BASE_DIR=eval
