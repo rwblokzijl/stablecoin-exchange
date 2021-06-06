@@ -104,7 +104,13 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
     def time_last_validate(self, block):
         n_crawled = self.crawl_counter.pop(block.block_id, 0)
         db_lookups, processing_time = self.measure_database_and_time(block.validate_transaction, self.persistence)
-        print(f"{pretty_block(block)} M {n_crawled} E {db_lookups} {processing_time} ")
+        if self.is_gateway:
+            total_time_p = time.process_time() - self.start_time_p
+            total_time = time.time() - self.start_time
+        else:
+            total_time_p = 0
+            total_time = 0
+        print(f"{pretty_block(block)} M {n_crawled} E {db_lookups} {processing_time} TT {total_time}/{total_time_p}")
 
     def sign_block(self, peer, public_key=EMPTY_PK, block_type=b'unknown', transaction=None, linked=None, additional_info=None):
         if linked:
@@ -180,10 +186,12 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
 
         await self.sync_peers("wait_for_config")
 
+        self.start_time = 0
+
         if self.is_gateway:
             self.register_task("create_money", self.gateway_create_money_to_all, delay=2+self.get_delay())
         else:
-            self.sync_next("await_money", "send_random_money", self.send_random_money, interval=1, delay=1
+            self.sync_next("await_money", "run_normal_test", self.run_normal_test
                     )
                     # , print=print)
 
@@ -225,19 +233,32 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
             # await wait(futures)
 
         # wait for clients to do their thing
-        self.sync_next("await_money", "await", self.await_shutdown)
-        # await self.await_shutdown()
+        self.sync_next("await_money", "await", self.run_until_done)
+        # await self.run_until_done()
 
     def get_random_peer(self):
         client = random.choice(self.valid_peers)
         return self.get_peer_from_public_key(client)
+
+    async def run_stress_test(self): # no delay
+        while self.transactions_sent < self.transactions_to_do:
+            await self.send_random_money()
+
+    async def run_normal_test(self): # no delay
+        self.register_task("send_random_money", self.send_random_money, interval=1, delay=1)
 
     async def send_random_money(self, amount=5):
         peer = self.get_random_peer()
         if peer:
             return await self.eval_attempt_send_money(peer, amount)
 
-    async def await_shutdown(self):
+    async def run_until_done(self):
+        # Global start time
+        self.start_time_p = time.process_time()
+        self.start_time = time.time()
+        print("START TIMER")
+
+        # wait until everyone is done
         await self.sync_peers("shutdown", 1)
         self.stop()
 
@@ -253,7 +274,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         self.transactions_sent += 1
         self.transactions_since_checkpoint += 1
         if self.transactions_sent >= self.transactions_to_do:
-            self.replace_task("send_random_money", self.await_shutdown)
+            self.replace_task("send_random_money", self.run_until_done)
 
     async def await_and_time(self, func, *args, **kwargs):
         t = time.process_time()
@@ -263,7 +284,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         wait_time = time.process_time() - t
         if not prop or not resp:
             return None, None
-        self.pprint(prop, resp, processing_time, wait_time)
+        self.pprint(prop, resp, processing_time, wait_time)#, total_time)
         return resp, prop
 
     def pprint(self, prop, resp, processing_time, wait_time):
@@ -285,7 +306,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         else:
             amount = "    "
 
-        print (f"{pretty_block(prop)} {type_map[prop.type]} {balance} - {amount} -> {pretty_block(resp)} TD {self.transactions_sent} LC {self.transactions_since_checkpoint} T {processing_time}/{wait_time} s")
+        print (f"{pretty_block(prop)} {type_map[prop.type]} {balance} - {amount} -> {pretty_block(resp)} TD {self.transactions_sent} LC {self.transactions_since_checkpoint} T {processing_time}/{wait_time}")
 
     def next_block_id(self):
         key = pretty_peer(self.my_peer)
