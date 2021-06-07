@@ -18,6 +18,7 @@ services:
       - CLIENTS=${CLIENTS}
       - TRANSACTIONS_TO_DO=${TRANSACTIONS_TO_DO}
       - CHECKPOINT_EVERY=${CHECKPOINT_EVERY}
+      - TPS_TEST=${TPS_TEST}
   client:
     # restart: always
     build:
@@ -39,6 +40,7 @@ services:
       - GATEWAYS=${GATEWAYS}
       - TRANSACTIONS_TO_DO=${TRANSACTIONS_TO_DO}
       - CHECKPOINT_EVERY=${CHECKPOINT_EVERY}
+      - TPS_TEST=${TPS_TEST}
 
 volumes:
   sync:

@@ -40,6 +40,7 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         self.n_clients                     = kwargs.pop('n_clients')
         self.transactions_to_do            = kwargs.pop('transactions_to_do')
         self.min_checkpoint_freq           = kwargs.pop('min_checkpoint_freq')
+        self.tps_test                      = kwargs.pop('tps_test')
 
         self.crawl_counter                 = {}
         self.transactions_sent             = 0
@@ -191,9 +192,10 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         if self.is_gateway:
             self.register_task("create_money", self.gateway_create_money_to_all, delay=2+self.get_delay())
         else:
-            self.sync_next("await_money", "run_normal_test", self.run_normal_test
-                    )
-                    # , print=print)
+            if self.tps_test:
+                self.sync_next("await_money", "run_test", self.run_stress_test, delay=1)
+            else:
+                self.sync_next("await_money", "run_test", self.run_normal_test)
 
     @synchronized
     def eval_send_money(self, peer, amount=None):
@@ -240,29 +242,34 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         client = random.choice(self.valid_peers)
         return self.get_peer_from_public_key(client)
 
-    async def run_stress_test(self): # no delay
-        while self.transactions_sent < self.transactions_to_do:
-            await self.send_random_money()
-
-    async def run_normal_test(self): # no delay
-        self.register_task("send_random_money", self.send_random_money, interval=1, delay=1)
-
-    async def send_random_money(self, amount=5):
-        peer = self.get_random_peer()
-        if peer:
-            return await self.eval_attempt_send_money(peer, amount)
-
     async def run_until_done(self):
         # Global start time
-        self.start_time_p = time.process_time()
-        self.start_time = time.time()
-        print("START TIMER")
+        if self.is_gateway:
+            self.start_time_p = time.process_time()
+            self.start_time = time.time()
 
         # wait until everyone is done
         await self.sync_peers("shutdown", 1)
         self.stop()
 
-    async def eval_attempt_send_money(self, peer, amount=5):
+    async def run_stress_test(self): # no delay
+        while self.transactions_sent < self.transactions_to_do:
+            await self.eval_attempt_send_money()
+        await self.run_until_done()
+
+    async def run_normal_test(self): # with delay
+        self.register_task("send_random_money", self.send_random_money, interval=1, delay=1)
+
+    async def send_random_money(self):
+        await self.eval_attempt_send_money()
+        if self.transactions_sent >= self.transactions_to_do:
+            self.replace_task("send_random_money", self.run_until_done)
+
+    async def eval_attempt_send_money(self, amount=5):
+        peer = self.get_random_peer()
+        if not peer:
+            return
+
         with self.receive_block_lock:
             my_balance = self.get_my_balance()
             verified_balance = self.get_my_verified_balance() - amount
@@ -273,8 +280,6 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         resp, prop = await self.await_and_time(self.eval_send_money, peer, amount)
         self.transactions_sent += 1
         self.transactions_since_checkpoint += 1
-        if self.transactions_sent >= self.transactions_to_do:
-            self.replace_task("send_random_money", self.run_until_done)
 
     async def await_and_time(self, func, *args, **kwargs):
         t = time.process_time()

@@ -1,15 +1,87 @@
 #!/bin/bash
 
-export TRANSACTIONS_TO_DO=1024
-# export TRANSACTIONS_TO_DO=10
+# export TRANSACTIONS_TO_DO=1024
+export TRANSACTIONS_TO_DO=10
 export PROCESSES=()
 
-# client:gateway:checkpoint_freq
+# client:gateway:checkpoint_freq:tps
 A=(
-    4:1:1
-    4:1:2
-    4:1:4
-    4:1:8
+
+#     # exp 3: as function of gateway count
+#     2:2:1
+#     3:3:1
+#     4:2:1
+#     4:4:1
+
+#     # exp 1: as function of users
+#     2:1:1
+#     3:1:1
+#     4:1:1
+#     5:1:1
+#     6:1:1
+#     7:1:1
+#     8:1:1
+#     9:1:1
+
+#     2:1:2
+#     3:1:2
+#     4:1:2
+#     5:1:2
+#     6:1:2
+#     7:1:2
+#     8:1:2
+#     9:1:2
+
+#     2:1:4
+#     3:1:4
+#     4:1:4
+#     5:1:4
+#     6:1:4
+#     7:1:4
+#     8:1:4
+#     9:1:4
+
+#     2:1:6
+#     3:1:6
+#     4:1:6
+#     5:1:6
+#     6:1:6
+#     7:1:6
+#     8:1:6
+#     9:1:6
+
+#     2:1:8
+#     3:1:8
+#     4:1:8
+#     5:1:8
+#     6:1:8
+#     7:1:8
+#     8:1:8
+#     9:1:8
+
+# # exp 2: as function of checkpoint_freq
+    # # 8:1:2 # already in exp 1
+    # 8:1:4
+    # 8:1:6
+    # 8:1:8
+
+    # TODO:
+    # 8:1:10
+    # 8:1:12
+    # 8:1:14
+    # 8:1:16
+    # 8:1:18
+    # 8:1:20
+    # 8:1:22
+    # 8:1:24
+    # 8:1:26
+    # 8:1:28
+    # 8:1:30
+    # 8:1:32
+
+    2:1:3:0
+    2:1:3:1
+
 )
 
 # simple test
@@ -71,12 +143,21 @@ function run_local {
 
 for a in ${A[@]}
 do
-    export CLIENTS=${a%:*:*}
+    export CLIENTS=${a%:*:*:*}
     tmp=${a#"$CLIENTS"}
     tmp=${tmp#:}
-    export GATEWAYS=${tmp%:*}
+    export GATEWAYS=${tmp%:*:*}
     tmp=${tmp#"$GATEWAYS"}
-    export CHECKPOINT_EVERY=${tmp#:}
+    tmp=${tmp#:}
+    export CHECKPOINT_EVERY=${tmp%:*}
+    tmp=${tmp#"$CHECKPOINT_EVERY"}
+    export TPS_TEST=${tmp#:}
+
+    # echo $CLIENTS
+    # echo $GATEWAYS
+    # echo $CHECKPOINT_EVERY
+    # echo $TPS_TEST
+    # echo -----
 
     run_docker
     # run_local

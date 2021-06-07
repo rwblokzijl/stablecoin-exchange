@@ -25,6 +25,7 @@ GATEWAYS           = int(os.environ.get('GATEWAYS', None))
 CLIENTS            = int(os.environ.get('CLIENTS',  None))
 TRANSACTIONS_TO_DO = int(os.environ.get('TRANSACTIONS_TO_DO',  None))
 CHECKPOINT_EVERY   = int(os.environ.get('CHECKPOINT_EVERY',  None))
+TPS_TEST           = bool(int(os.environ.get('TPS_TEST', 0)))
 
 # print(GATEWAYS)
 # print(CLIENTS)
@@ -83,6 +84,7 @@ async def start_communities():
             'settings': settings,
             'transactions_to_do': TRANSACTIONS_TO_DO,
             'min_checkpoint_freq': CHECKPOINT_EVERY,
+            'tps_test': TPS_TEST,
             },
         'on_start': [('started', )]
         }]
