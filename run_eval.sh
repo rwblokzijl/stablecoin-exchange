@@ -4,90 +4,41 @@
 export TRANSACTIONS_TO_DO=10
 export PROCESSES=()
 
-# client:gateway:checkpoint_freq:tps
-A=(
+# array of experiment to run:
+# format: $client:$gateway:$checkpoint_freq:$test_tps
+A=()
 
-#     # exp 3: as function of gateway count
-#     2:2:1
-#     3:3:1
-#     4:2:1
-#     4:4:1
+# exp 1: as function of users
+for f in 1 $(seq 2 2 9); do # checkpoint_freq 1 2 4 6 8
+    for c in $(seq 2 9); do # n_clients 2 - 9
+        A+=($c:1:$f:0)
+        A+=($c:1:$f:1)
+    done
+done
 
-#     # exp 1: as function of users
-#     2:1:1
-#     3:1:1
-#     4:1:1
-#     5:1:1
-#     6:1:1
-#     7:1:1
-#     8:1:1
-#     9:1:1
+# exp 2: as function of checkpoint_freq
+for f in $(seq 10 2 32); do # checkpoint_freq 10-32 (2-8 are already in test 1)
+    A+=(8:1:$f:0)
+    A+=(8:1:$f:1)
+done
 
-#     2:1:2
-#     3:1:2
-#     4:1:2
-#     5:1:2
-#     6:1:2
-#     7:1:2
-#     8:1:2
-#     9:1:2
+# # exp 3: as function of gateway count
+A+=( \
+    2:2:1:0
+    3:3:1:0
+    4:2:1:0
+    4:4:1:0
 
-#     2:1:4
-#     3:1:4
-#     4:1:4
-#     5:1:4
-#     6:1:4
-#     7:1:4
-#     8:1:4
-#     9:1:4
-
-#     2:1:6
-#     3:1:6
-#     4:1:6
-#     5:1:6
-#     6:1:6
-#     7:1:6
-#     8:1:6
-#     9:1:6
-
-#     2:1:8
-#     3:1:8
-#     4:1:8
-#     5:1:8
-#     6:1:8
-#     7:1:8
-#     8:1:8
-#     9:1:8
-
-# # exp 2: as function of checkpoint_freq
-    # # 8:1:2 # already in exp 1
-    # 8:1:4
-    # 8:1:6
-    # 8:1:8
-
-    # TODO:
-    # 8:1:10
-    # 8:1:12
-    # 8:1:14
-    # 8:1:16
-    # 8:1:18
-    # 8:1:20
-    # 8:1:22
-    # 8:1:24
-    # 8:1:26
-    # 8:1:28
-    # 8:1:30
-    # 8:1:32
-
-    2:1:3:0
-    2:1:3:1
-
+    2:2:1:1
+    3:3:1:1
+    4:2:1:1
+    4:4:1:1
 )
 
 # simple test
 # A=( 2:1:2 )
 
-# echo ${A[@]}
+# echo ${A[@]} | tr " " "\n"
 # exit
 
 function run_docker {
