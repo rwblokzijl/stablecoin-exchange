@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# export TRANSACTIONS_TO_DO=1024
-export TRANSACTIONS_TO_DO=10
+export TRANSACTIONS_TO_DO=1024
+# export TRANSACTIONS_TO_DO=10
 export PROCESSES=()
 
 # array of experiment to run:
