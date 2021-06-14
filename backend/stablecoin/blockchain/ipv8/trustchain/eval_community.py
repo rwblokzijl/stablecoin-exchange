@@ -106,12 +106,23 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
         n_crawled = self.crawl_counter.pop(block.block_id, 0)
         db_lookups, processing_time = self.measure_database_and_time(block.validate_transaction, self.persistence)
         if self.is_gateway:
-            total_time_p = time.process_time() - self.start_time_p
-            total_time = time.time() - self.start_time
+            now   = time.time()
+            now_p = time.process_time()
+
+            total_time        = now - self.start_time
+            total_time_p      = now_p - self.start_time_p
+            time_since_last   = now - self.last_time
+            time_since_last_p = now_p - self.last_time_p
+
+            self.last_time               = now
+            self.last_time_p             = now_p
+            self.transactions_validated += 1
         else:
-            total_time_p = 0
-            total_time = 0
-        print(f"{pretty_block(block)} M {n_crawled} E {db_lookups} {processing_time} TT {total_time}/{total_time_p}")
+            total_time        = 0
+            total_time_p      = 0
+            time_since_last   = 0
+            time_since_last_p = 0
+        print(f"{pretty_block(block)} M {n_crawled} E {db_lookups} {processing_time} TT {total_time}/{total_time_p}/{time_since_last}/{time_since_last_p} TV {self.transactions_validated}")
 
     def sign_block(self, peer, public_key=EMPTY_PK, block_type=b'unknown', transaction=None, linked=None, additional_info=None):
         if linked:
@@ -187,7 +198,12 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
 
         await self.sync_peers("wait_for_config")
 
-        self.start_time = 0
+        self.start_time   = 0
+        self.start_time_p = 0
+        self.last_time    = 0
+        self.last_time_p  = 0
+
+        self.transactions_validated = 0
 
         if self.is_gateway:
             self.register_task("create_money", self.gateway_create_money_to_all, delay=2+self.get_delay())
@@ -245,8 +261,12 @@ class EvalTrustChainCommunity(MyTrustChainCommunity):
     async def run_until_done(self):
         # Global start time
         if self.is_gateway:
+            self.start_time   = time.time()
             self.start_time_p = time.process_time()
-            self.start_time = time.time()
+            self.last_time    = time.time()
+            self.last_time_p  = time.process_time()
+
+            self.transactions_validated = 0
 
         # wait until everyone is done
         await self.sync_peers("shutdown", 1)

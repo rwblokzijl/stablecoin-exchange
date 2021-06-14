@@ -8,32 +8,86 @@ export PROCESSES=()
 # format: $client:$gateway:$checkpoint_freq:$test_tps
 A=()
 
-# exp 1: as function of users
-for f in 1 $(seq 2 2 9); do # checkpoint_freq 1 2 4 6 8
-    for c in $(seq 2 9); do # n_clients 2 - 9
-        A+=($c:1:$f:0)
-        A+=($c:1:$f:1)
-    done
-done
+# # # exp 3: as function of gateway count
+# A+=( \
+#     2:2:1:0
+#     3:3:1:0
+#     4:2:1:0
+#     4:4:1:0
+
+#     # 2:2:1:1 these seem to have issues
+#     # 4:2:1:1
+#     # 3:3:1:1
+#     # 4:4:1:1
+# )
+
+# A+=( \
+
+#     # cp 1
+#     2:1:1:0
+#     3:1:1:0
+#     4:1:1:0
+#     5:1:1:0
+#     6:1:1:0
+#     7:1:1:0
+#     8:1:1:0
+#     9:1:1:0
+
+#     # cp 4
+#     2:1:4:0
+#     3:1:4:0
+#     4:1:4:0
+#     5:1:4:0
+#     6:1:4:0
+#     7:1:4:0
+#     8:1:4:0
+#     9:1:4:0
+# )
+
+
+# no delay
+A+=( \
+
+    # cp 1
+    1:1:1:1
+    2:1:1:1
+    3:1:1:1
+    4:1:1:1
+    5:1:1:1
+    6:1:1:1
+    7:1:1:1
+    8:1:1:1
+    9:1:1:1
+
+    # cp 4
+    1:1:4:1
+    2:1:4:1
+    3:1:4:1
+    4:1:4:1
+    5:1:4:1
+    6:1:4:1
+    7:1:4:1
+    8:1:4:1
+    9:1:4:1
+
+)
 
 # exp 2: as function of checkpoint_freq
-for f in $(seq 10 2 32); do # checkpoint_freq 10-32 (2-8 are already in test 1)
-    A+=(8:1:$f:0)
-    A+=(8:1:$f:1)
+A+=(7:1:2:0)
+# A+=(7:1:2:1)
+for f in $(seq 6 2 32); do # checkpoint_freq 10-32 (2-8 are already in test 1)
+    A+=(7:1:$f:0)
+    # A+=(7:1:$f:1)
 done
 
-# # exp 3: as function of gateway count
-A+=( \
-    2:2:1:0
-    3:3:1:0
-    4:2:1:0
-    4:4:1:0
 
-    2:2:1:1
-    3:3:1:1
-    4:2:1:1
-    4:4:1:1
-)
+# # exp 1: as function of users
+# for f in 1 $(seq 2 2 8); do # checkpoint_freq 1 2 4 6 8
+#     for c in $(seq 2 7); do # n_clients 2 - 7 (1 gateway 7 clients is max because 8 cores)
+#         A+=($c:1:$f:0)
+#         A+=($c:1:$f:1)
+#     done
+# done
 
 # simple test
 # A=( 2:1:2 )
