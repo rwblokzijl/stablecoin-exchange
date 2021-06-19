@@ -1,0 +1,150 @@
+Sending build context to Docker daemon  4.545MB
+Step 1/19 : FROM python:3.7.7-alpine
+ ---> 6a5ca85ed89b
+Step 2/19 : ENV PATH="/scripts:${PATH}"
+ ---> Using cache
+ ---> 8dafd950886b
+Step 3/19 : RUN apk add --update --no-cache libsodium libressl
+ ---> Using cache
+ ---> bfbd09c64807
+Step 4/19 : RUN apk add --update --no-cache --virtual .tmp python3-dev build-base linux-headers libffi-dev libressl-dev musl-dev cargo
+ ---> Using cache
+ ---> ebf92d0615f9
+Step 5/19 : RUN pip install cryptography #cache install to avoid building each time requirements change
+ ---> Using cache
+ ---> 951d51649818
+Step 6/19 : COPY ./requirements.txt /requirements.txt
+ ---> Using cache
+ ---> 24fb7417d5c2
+Step 7/19 : RUN pip install -r /requirements.txt
+ ---> Using cache
+ ---> 01a03f078e41
+Step 8/19 : RUN apk del .tmp
+ ---> Using cache
+ ---> c6e83d3a8e5b
+Step 9/19 : RUN mkdir -p /vol/database
+ ---> Using cache
+ ---> 37c63f97ffe5
+Step 10/19 : RUN mkdir -p /vol/logs
+ ---> Using cache
+ ---> eb296484e7af
+Step 11/19 : RUN mkdir -p /vol/sync
+ ---> Using cache
+ ---> c7837661f645
+Step 12/19 : RUN adduser -D user
+ ---> Using cache
+ ---> b6ff102cf462
+Step 13/19 : RUN chown -R user:user /vol
+ ---> Using cache
+ ---> 35a6a9848109
+Step 14/19 : RUN mkdir /eurotoken
+ ---> Using cache
+ ---> eba5f2d14780
+Step 15/19 : COPY ./stablecoin /eurotoken
+ ---> Using cache
+ ---> c4dfb044bbde
+Step 16/19 : WORKDIR /eurotoken
+ ---> Using cache
+ ---> 98ce674cafb2
+Step 17/19 : RUN chmod -R 755 /eurotoken
+ ---> Using cache
+ ---> 4e832b5740ba
+Step 18/19 : USER user
+ ---> Using cache
+ ---> aa26f591f1a0
+Step 19/19 : CMD ["/bin/sh", "-c", "python -u run_coin.py >> /vol/logs/run.log 2>&1" ]
+ ---> Using cache
+ ---> ec0d24272681
+Successfully built ec0d24272681
+Successfully tagged gateway_gateway:latest
+Sending build context to Docker daemon  4.545MB
+Step 1/19 : FROM python:3.7.7-alpine
+ ---> 6a5ca85ed89b
+Step 2/19 : ENV PATH="/scripts:${PATH}"
+ ---> Using cache
+ ---> 8dafd950886b
+Step 3/19 : RUN apk add --update --no-cache libsodium libressl
+ ---> Using cache
+ ---> bfbd09c64807
+Step 4/19 : RUN apk add --update --no-cache --virtual .tmp python3-dev build-base linux-headers libffi-dev libressl-dev musl-dev cargo
+ ---> Using cache
+ ---> ebf92d0615f9
+Step 5/19 : RUN pip install cryptography #cache install to avoid building each time requirements change
+ ---> Using cache
+ ---> 951d51649818
+Step 6/19 : COPY ./requirements.txt /requirements.txt
+ ---> Using cache
+ ---> 24fb7417d5c2
+Step 7/19 : RUN pip install -r /requirements.txt
+ ---> Using cache
+ ---> 01a03f078e41
+Step 8/19 : RUN apk del .tmp
+ ---> Using cache
+ ---> c6e83d3a8e5b
+Step 9/19 : RUN mkdir -p /vol/database
+ ---> Using cache
+ ---> 37c63f97ffe5
+Step 10/19 : RUN mkdir -p /vol/logs
+ ---> Using cache
+ ---> eb296484e7af
+Step 11/19 : RUN mkdir -p /vol/sync
+ ---> Using cache
+ ---> c7837661f645
+Step 12/19 : RUN adduser -D user
+ ---> Using cache
+ ---> b6ff102cf462
+Step 13/19 : RUN chown -R user:user /vol
+ ---> Using cache
+ ---> 35a6a9848109
+Step 14/19 : RUN mkdir /eurotoken
+ ---> Using cache
+ ---> eba5f2d14780
+Step 15/19 : COPY ./stablecoin /eurotoken
+ ---> Using cache
+ ---> c4dfb044bbde
+Step 16/19 : WORKDIR /eurotoken
+ ---> Using cache
+ ---> 98ce674cafb2
+Step 17/19 : RUN chmod -R 755 /eurotoken
+ ---> Using cache
+ ---> 4e832b5740ba
+Step 18/19 : USER user
+ ---> Using cache
+ ---> aa26f591f1a0
+Step 19/19 : CMD ["/bin/sh", "-c", "python -u run_coin.py >> /vol/logs/run.log 2>&1" ]
+ ---> Using cache
+ ---> ec0d24272681
+Successfully built ec0d24272681
+Successfully tagged gateway_client:latest
+Attaching to gateway_gateway_1, gateway_client_1
+[33mgateway_1  |[0m True
+[33mgateway_1  |[0m ec-g-41ee8e93f42d:8090.pem
+[36mclient_1   |[0m False
+[36mclient_1   |[0m ec-c-84c6c36f76a1:8090.pem
+[36mclient_1   |[0m My key:     6dc989f4
+[36mclient_1   |[0m My gateway: f1c72afa
+[33mgateway_1  |[0m My key:     f1c72afa
+[33mgateway_1  |[0m Client: 6dc989f4
+[36mclient_1   |[0m f1c72afa:1    M 0 E 0 4.7729999999968076e-05 TT 0/0/0/0 TV 0
+[33mgateway_1  |[0m f1c72afa:1    C      - 5120 -> 6dc989f4:1    TD 0 LC 0 T 0.004076709999999983/0.009731831000000024
+[36mclient_1   |[0m ERROR:asyncio:Exception in callback TaskManager.register_task.<locals>.done_cb(<Task finishe...ty sequence')>) at /eurotoken/pyipv8/ipv8/taskmanager.py:128
+[36mclient_1   |[0m handle: <Handle TaskManager.register_task.<locals>.done_cb(<Task finishe...ty sequence')>) at /eurotoken/pyipv8/ipv8/taskmanager.py:128>
+[36mclient_1   |[0m Traceback (most recent call last):
+[36mclient_1   |[0m   File "/usr/local/lib/python3.7/asyncio/events.py", line 88, in _run
+[36mclient_1   |[0m     self._context.run(self._callback, *self._args)
+[36mclient_1   |[0m   File "/eurotoken/pyipv8/ipv8/taskmanager.py", line 131, in done_cb
+[36mclient_1   |[0m     future.result()
+[36mclient_1   |[0m   File "/eurotoken/pyipv8/ipv8/taskmanager.py", line 24, in delay_runner
+[36mclient_1   |[0m     await task(*args)
+[36mclient_1   |[0m   File "/eurotoken/blockchain/ipv8/trustchain/eval_community.py", line 277, in run_stress_test
+[36mclient_1   |[0m     await self.eval_attempt_send_money()
+[36mclient_1   |[0m   File "/eurotoken/blockchain/ipv8/trustchain/eval_community.py", line 289, in eval_attempt_send_money
+[36mclient_1   |[0m     peer = self.get_random_peer()
+[36mclient_1   |[0m   File "/eurotoken/blockchain/ipv8/trustchain/eval_community.py", line 258, in get_random_peer
+[36mclient_1   |[0m     client = random.choice(self.valid_peers)
+[36mclient_1   |[0m   File "/usr/local/lib/python3.7/random.py", line 261, in choice
+[36mclient_1   |[0m     raise IndexError('Cannot choose from an empty sequence') from None
+[36mclient_1   |[0m IndexError: Cannot choose from an empty sequence
+[33mgateway_1  |[0m WARNING:EvalTrustChainCommunity:Non-interval task "await" has been running for 895.58!
+[33mgateway_1  |[0m WARNING:EvalTrustChainCommunity:Non-interval task "await" has been running for 1495.58!
+[33mgateway_1  |[0m WARNING:EvalTrustChainCommunity:Non-interval task "await" has been running for 2095.59!
